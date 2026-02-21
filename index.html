@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/png" href="https://i.ibb.co/G4bmxpLm/5.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FXBROS - SCHOOL OF SKILLS</title>
+    <meta name="description" content="Academia de Forex premium e high-tech com dashboard de membros, gestão de conteúdo e planos de assinatura." />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              slate: {
+                800: '#27272a',
+                850: '#18181b',
+                900: '#09090b',
+                950: '#000000',
+              },
+              primary: {
+                500: '#ff204e',
+                600: '#E40437',
+                700: '#c2002e',
+              },
+              red: {
+                50: '#fff0f3',
+                100: '#ffe3e8',
+                200: '#ffc9d4',
+                300: '#ff95aa',
+                400: '#ff5478',
+                500: '#ff204e',
+                600: '#E40437',
+                700: '#c2002e',
+                800: '#9f0028',
+                900: '#840424',
+                950: '#4a0011',
+              },
+              gold: {
+                400: '#fbbf24',
+                500: '#f59e0b',
+                600: '#d97706',
+              }
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              mono: ['Roboto Mono', 'monospace'],
+              serif: ['Playfair Display', 'serif'],
+            },
+            animation: {
+              marquee: 'marquee 30s linear infinite',
+              fadeIn: 'fadeIn 1s ease-out forwards',
+            },
+            keyframes: {
+              marquee: {
+                '0%': { transform: 'translateX(0%)' },
+                '100%': { transform: 'translateX(-50%)' },
+              },
+              fadeIn: {
+                '0%': { opacity: '0', transform: 'translateY(10px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@300;400;600;800&family=Playfair+Display:wght@400;700&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --font-main: 'Inter';
+      }
+      body {
+        font-family: var(--font-main), sans-serif;
+        background-color: #000000;
+        color: #f8fafc;
+      }
+      .glass-panel {
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(228, 4, 55, 0.15);
+      }
+      .neon-glow {
+        box-shadow: 0 0 20px rgba(228, 4, 55, 0.4);
+      }
+      /* Custom Scrollbar for dark theme */
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: #000000;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #333;
+        border-radius: 4px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #E40437;
+      }
+      
+      /* Hide scrollbar for ticker but keep functionality */
+      .no-scrollbar::-webkit-scrollbar {
+          display: none;
+      }
+      .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+      }
+
+      /* Print Styles for Invoice */
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        #invoice-area, #invoice-area * {
+          visibility: visible;
+        }
+        #invoice-area {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          background-color: white;
+          color: black;
+          padding: 20px;
+          border: 1px solid #ddd;
+        }
+        /* Hide buttons inside invoice when printing */
+        .no-print {
+          display: none !important;
+        }
+      }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.4",
+    "@google/genai": "https://esm.sh/@google/genai@^1.41.0",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "react": "https://esm.sh/react@^19.2.4",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
+    "react-markdown": "https://esm.sh/react-markdown@^10.1.0",
+    "url": "https://esm.sh/url@^0.11.4",
+    "@vercel/node": "https://esm.sh/@vercel/node@^5.6.2",
+    "firebase/": "https://esm.sh/firebase@^12.9.0/"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
