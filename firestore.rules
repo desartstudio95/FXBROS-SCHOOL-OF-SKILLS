@@ -2,30 +2,99 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Regras para Comentários do Gráfico
-    match /chart_comments/{commentId} {
-      // Qualquer um autenticado pode ler
-      allow read: if request.auth != null;
-      
-      // Qualquer um autenticado pode criar (se o userId bater com o auth.uid)
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      
-      // APENAS o dono pode apagar
-      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
-      
-      // Ninguém pode editar (opcional, ou permitir apenas dono)
-      allow update: if false; 
-    }
-
-    // Regras para Usuários (já deve existir algo similar)
-    match /users/{userId} {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
     }
     
-    // Outras coleções...
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && (
+        getUserData().role == 'admin' || 
+        getUserData().role == 'super_admin' ||
+        request.auth.token.email == "desartstudiopro@gmail.com"
+      );
+    }
+    
+    function isSuperAdmin() {
+      return isAuthenticated() && (
+        getUserData().role == 'super_admin' ||
+        request.auth.token.email == "desartstudiopro@gmail.com"
+      );
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    // Módulos, Vídeos e Recursos
+    match /modules/{moduleId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    match /videos/{videoId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    match /resources/{resourceId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Comentários do Gráfico
+    match /chart_comments/{commentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if false; 
+    }
+    
+    // Grupo VIP de Conversas
+    match /chat_messages/{messageId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == resource.data.userId;
+      allow delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+    }
+
+    // School of Skills Chat
+    match /sos_chat/{messageId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if false;
+      allow delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+    }
+
+    // Usuários
+    match /users/{userId} {
+      // Permite ler perfis se autenticado
+      allow read: if isAuthenticated();
+      
+      // Permite criar o próprio perfil apenas como 'member'
+      allow create: if isOwner(userId) && request.resource.data.role == 'member';
+      
+      // Permite atualizar o próprio perfil (sem mudar o cargo) ou se for super_admin
+      allow update: if isSuperAdmin() || (isOwner(userId) && request.resource.data.role == resource.data.role);
+      
+      // Apenas super_admin pode deletar usuários
+      allow delete: if isSuperAdmin();
+    }
+    
+    // Fallback de segurança
     match /{document=**} {
-      allow read, write: if request.auth != null; // Regra genérica de desenvolvimento (CUIDADO em produção)
+      allow read, write: if isSuperAdmin();
     }
   }
 }

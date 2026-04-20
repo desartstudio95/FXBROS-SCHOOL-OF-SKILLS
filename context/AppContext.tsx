@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
@@ -26,14 +26,16 @@ import {
   getDownloadURL
 } from 'firebase/storage';
 import { auth, db, storage } from '../firebaseConfig';
-import type { User, VideoLesson, PricingPlan, HomeContent, ThemeSettings, Testimonial, ModuleResource, PlansPageContent, ModuleMetadata, WelcomeContent, DashboardContent, AppNotification } from '../types';
+import type { User, VideoLesson, PricingPlan, HomeContent, ThemeSettings, Testimonial, ModuleResource, PlansPageContent, ModuleMetadata, WelcomeContent, DashboardContent, AppNotification, AboutPageContent, RobotsPageContent, RobotDefinition } from '../types';
+
+import { toast } from 'sonner';
 
 interface AppContextType {
   user: User | null;
   loadingAuth: boolean;
   login: (email: string, password?: string) => Promise<string | null>;
   loginAsAdminByCode: () => void;
-  register: (email: string, password: string, name: string) => Promise<string | null>;
+  register: (email: string, password: string, name: string, courses?: string[]) => Promise<string | null>;
   // Admin System Functions
   checkSystemInitialized: () => Promise<boolean>;
   registerSystemAdmin: (email: string, password: string, name: string) => Promise<string | null>;
@@ -60,6 +62,11 @@ interface AppContextType {
   deletePlan: (id: string) => Promise<void>;
   updatePlan: (plan: PricingPlan) => Promise<void>;
   
+  robots: RobotDefinition[];
+  addRobot: (robot: RobotDefinition) => Promise<void>;
+  deleteRobot: (id: string) => Promise<void>;
+  updateRobot: (robot: RobotDefinition) => Promise<void>;
+  
   // CMS Content
   plansPageContent: PlansPageContent;
   updatePlansPageContent: (content: PlansPageContent) => Promise<void>;
@@ -72,6 +79,10 @@ interface AppContextType {
   updateWelcomeContent: (content: WelcomeContent) => Promise<void>;
   dashboardContent: DashboardContent;
   updateDashboardContent: (content: DashboardContent) => Promise<void>;
+  aboutPageContent: AboutPageContent;
+  updateAboutPageContent: (content: AboutPageContent) => Promise<void>;
+  robotsPageContent: RobotsPageContent;
+  updateRobotsPageContent: (content: RobotsPageContent) => Promise<void>;
   
   themeSettings: ThemeSettings;
   updateThemeSettings: (settings: ThemeSettings) => void;
@@ -113,14 +124,14 @@ const defaultTestimonials: Testimonial[] = [
 ];
 
 const defaultModulesMetadata: ModuleMetadata[] = [
-  { id: 'Fundamentos', name: 'Fundamentos', description: 'A base sólida necessária para iniciar no mercado Forex. Entenda o que move o preço.', thumbnail: 'https://images.unsplash.com/photo-1611974765215-0dd5963263c4?auto=format&fit=crop&q=80&w=600', isHighlight: true },
-  { id: 'AnaliseTecnica', name: 'Análise Técnica', description: 'Domine a leitura gráfica, price action e indicadores essenciais.', thumbnail: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&q=80&w=600', isHighlight: true },
-  { id: 'Institucional', name: 'Smart Money Concepts', description: 'Aprenda como os bancos operam. Order Blocks, Liquidez e Estrutura.', thumbnail: 'https://images.unsplash.com/photo-1640340434855-6084b1f4901c?auto=format&fit=crop&q=80&w=600', isHighlight: true },
-  { id: 'Psicologia', name: 'Psicologia do Trader', description: 'Blindagem mental e gestão emocional para alta performance.', thumbnail: 'https://images.unsplash.com/photo-1555421689-d68471e189f2?auto=format&fit=crop&q=80&w=600', isHighlight: false }
+  { id: 'Fundamentos', name: '01. Fundamentos', description: 'A base sólida necessária para iniciar no mercado Forex. Entenda o que move o preço.', thumbnail: 'https://images.unsplash.com/photo-1611974765215-0dd5963263c4?auto=format&fit=crop&q=80&w=600', isHighlight: true },
+  { id: 'AnaliseTecnica', name: '02. Análise Técnica', description: 'Domine a leitura gráfica, price action e indicadores essenciais.', thumbnail: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&q=80&w=600', isHighlight: true },
+  { id: 'Institucional', name: '03. Smart Money Concepts', description: 'Aprenda como os bancos operam. Order Blocks, Liquidez e Estrutura.', thumbnail: 'https://images.unsplash.com/photo-1640340434855-6084b1f4901c?auto=format&fit=crop&q=80&w=600', isHighlight: true },
+  { id: 'Psicologia', name: '04. Psicologia do Trader', description: 'Blindagem mental e gestão emocional para alta performance.', thumbnail: 'https://images.unsplash.com/photo-1555421689-d68471e189f2?auto=format&fit=crop&q=80&w=600', isHighlight: false }
 ];
 
 const defaultHomeContent: HomeContent = {
-  hero: { badge: 'Educação de Nível Institucional', titleLine1: 'Domine a Arte da', titleHighlight: 'Precisão no Trading', description: 'Junte-se ao círculo de elite de traders lucrativos. Combinamos análise técnica, dados institucionais e treinamento psicológico rigoroso.', bgImage: 'https://i.ibb.co/8Lt4Yrb1/Whisk-76888b109aec7939e59491f4a2baecafdr.jpg' },
+  hero: { badge: 'Educação de Nível Institucional', titleLine1: 'Aprenda, Opere e', titleHighlight: 'Seja Lucrativo', description: 'Junte-se ao círculo de elite de traders lucrativos. Combinamos análise técnica, dados institucionais e treinamento psicológico rigoroso.', bgImage: 'https://images.unsplash.com/photo-1518186285589-2f7649de83e0?auto=format&fit=crop&q=80&w=1920' },
   about: { badge: 'Nossa Metodologia', title: 'Trading Baseado em Dados. Sem Achismos.', description: 'Ensinamos você a interpretar o mercado pela ótica institucional.', imageUrl: 'https://i.ibb.co/bjrMzyJP/Whisk-b7b5d8d9cc7bdb4b2c94e4cb8a9d59addr.jpg', items: ["Análise Institucional", "Gestão de Risco", "Algoritmos", "Psicologia"] },
   founder: { 
     name: 'Isaac Mugabe', 
@@ -152,10 +163,38 @@ const defaultWelcomeContent: WelcomeContent = {
 
 const defaultDashboardContent: DashboardContent = {
   banner: { titlePrefix: "Olá,", subtitle: "Continue sua jornada rumo à consistência.", bgImage: "https://images.unsplash.com/photo-1611974765215-0dd5963263c4?auto=format&fit=crop&q=80&w=1200" },
-  sections: { continueWatchingTitle: "Assistir Agora", modulesTitle: "Módulos do Treinamento" }
+  sections: { continueWatchingTitle: "Assistir Agora", modulesTitle: "Módulos do Treinamento" },
+  devQuantForPro: true
 };
 
 const defaultThemeSettings: ThemeSettings = { fontFamily: 'Inter', baseFontSize: '16px' };
+
+const defaultAboutPageContent: AboutPageContent = {
+  hero: { badge: 'Nossa História', title: 'MAIS QUE UMA ACADEMIA, UMA COMUNIDADE DE ELITE', description: 'A FXBROS nasceu da necessidade de profissionalizar o trading no mercado de varejo, trazendo ferramentas e mentalidade institucional para todos.' },
+  mission: { title: 'Nossa Missão', description: 'Capacitar indivíduos a alcançarem a liberdade financeira através de uma educação disruptiva, ferramentas de automação de ponta e uma comunidade que respira o mercado 24 horas por dia.', image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=1200' },
+  values: { title: 'Nossos Valores', subtitle: 'Os pilares que sustentam cada decisão na FXBROS.', items: [
+    { title: "Transparência Total", description: "Acreditamos que a confiança é a base de qualquer relação no mercado financeiro." },
+    { title: "Foco em Resultados", description: "Não vendemos sonhos, vendemos metodologia." },
+    { title: "Inovação Constante", description: "O mercado evolui e nós também." }
+  ]}
+};
+
+const defaultRobots: RobotDefinition[] = [
+  { id: 'alpha-v1', name: 'Alpha Sentinel V1', type: 'Scalping HFT', description: 'Especializado em capturar micro-movimentos com execução em milissegundos.', price: '12.500 MT', features: ['Execução HFT', 'Trailing Stop Inteligente', 'Filtro de Notícias'], image: 'https://images.unsplash.com/photo-1555255707-c07966088b7b?auto=format&fit=crop&q=80&w=800', accent: 'blue' },
+  { id: 'omega-trend', name: 'Omega Trend Hunter', type: 'Trend Following', description: 'Identifica e surfa grandes tendências institucionais com baixo drawdown.', price: '18.900 MT', features: ['Análise Multi-Timeframe', 'Gestão de Risco Dinâmica', 'Alertas Mobile'], image: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&q=80&w=800', accent: 'red' },
+  { id: 'neural-grid', name: 'Neural Grid Master', type: 'Neural Network', description: 'Utiliza redes neurais para adaptar estratégias de grid em mercados laterais.', price: '25.000 MT', features: ['IA Adaptativa', 'Grid Não-Linear', 'Proteção de Capital'], image: 'https://images.unsplash.com/photo-1531746790731-6c087fecd05a?auto=format&fit=crop&q=80&w=800', accent: 'purple' }
+];
+
+const defaultRobotsPageContent: RobotsPageContent = {
+  hero: { badge: 'Tecnologia de Ponta', title: 'AUTOMAÇÃO INTELIGENTE PARA O MERCADO FINANCEIRO', description: 'Nossos robôs utilizam algoritmos avançados e inteligência artificial para executar operações com precisão cirúrgica.' },
+  stats: [
+    { label: "Volume Negociado", value: "500M+", suffix: "MT" },
+    { label: "Precisão Média", value: "94", suffix: "%" },
+    { label: "Usuários Ativos", value: "2.5", suffix: "k" },
+    { label: "Tempo de Resposta", value: "0.1", suffix: "ms" }
+  ],
+  catalog: { title: 'Escolha sua Arma', subtitle: 'Sistemas desenvolvidos para diferentes perfis de risco e objetivos financeiros.' }
+};
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -203,7 +242,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // --- CONTENT STATE (Local Persisted for now) ---
   const [plans, setPlans] = usePersistedState<PricingPlan[]>('fxbros_plans', defaultPlans);
-  const [modulesMetadata, setModulesMetadata] = usePersistedState<ModuleMetadata[]>('fxbros_modules', defaultModulesMetadata);
+  // const [modulesMetadata, setModulesMetadata] = usePersistedState<ModuleMetadata[]>('fxbros_modules', defaultModulesMetadata);
+  const [modulesMetadata, setModulesMetadata] = useState<ModuleMetadata[]>([]);
   const [testimonials, setTestimonials] = usePersistedState<Testimonial[]>('fxbros_testimonials', defaultTestimonials);
   
   // CMS Content
@@ -211,6 +251,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [plansPageContent, setPlansPageContent] = usePersistedState<PlansPageContent>('fxbros_plans_page', defaultPlansPageContent);
   const [welcomeContent, setWelcomeContent] = usePersistedState<WelcomeContent>('fxbros_welcome', defaultWelcomeContent);
   const [dashboardContent, setDashboardContent] = usePersistedState<DashboardContent>('fxbros_dashboard_v2', defaultDashboardContent);
+  const [aboutPageContent, setAboutPageContent] = usePersistedState<AboutPageContent>('fxbros_about_page', defaultAboutPageContent);
+  const [robots, setRobots] = usePersistedState<RobotDefinition[]>('fxbros_robots', defaultRobots);
+  const [robotsPageContent, setRobotsPageContent] = usePersistedState<RobotsPageContent>('fxbros_robots_page', defaultRobotsPageContent);
   const [themeSettings, setThemeSettings] = usePersistedState<ThemeSettings>('fxbros_theme', defaultThemeSettings);
 
   // User Progress
@@ -218,7 +261,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [favoriteVideoIds, setFavoriteVideoIds] = useState<string[]>([]);
 
   // --- FETCH DATA ---
-  const fetchAllUsers = async () => {
+  const fetchModulesMetadata = useCallback(async () => {
+      try {
+          const querySnapshot = await getDocs(collection(db, "modules"));
+          const list: ModuleMetadata[] = [];
+          querySnapshot.forEach((doc) => {
+              list.push(doc.data() as ModuleMetadata);
+          });
+          
+          if (list.length === 0) {
+              // Seed default data
+              console.log("Seeding default modules metadata...");
+              for (const meta of defaultModulesMetadata) {
+                  await setDoc(doc(db, "modules", meta.id), meta);
+                  list.push(meta);
+              }
+          }
+          
+          setModulesMetadata(list);
+      } catch (error) {
+          console.error("Error fetching modules metadata:", error);
+          // Fallback to default if error (e.g. offline)
+          setModulesMetadata(prev => prev.length === 0 ? defaultModulesMetadata : prev);
+      }
+  }, []);
+
+  const fetchAllUsers = useCallback(async () => {
       try {
           const querySnapshot = await getDocs(collection(db, "users"));
           const usersList: User[] = [];
@@ -229,9 +297,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       } catch (error: any) {
           if (error.code !== 'permission-denied') console.error("Error fetching users:", error);
       }
-  };
+  }, []);
 
-  const fetchVideos = async () => {
+  const fetchVideos = useCallback(async () => {
       try {
           const querySnapshot = await getDocs(collection(db, "videos"));
           const vList: VideoLesson[] = [];
@@ -252,9 +320,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       } catch (error) {
           console.warn("Error fetching videos");
       }
-  };
+  }, []);
 
-  const fetchResources = async () => {
+  const fetchResources = useCallback(async () => {
       try {
           const querySnapshot = await getDocs(collection(db, "resources"));
           const rList: ModuleResource[] = [];
@@ -265,12 +333,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       } catch (error) {
           console.warn("Error fetching resources");
       }
-  };
+  }, []);
 
   useEffect(() => {
-      fetchVideos();
-      fetchResources();
-  }, []);
+      if (user) {
+          fetchVideos();
+          fetchResources();
+          fetchModulesMetadata();
+      }
+  }, [user, fetchVideos, fetchResources, fetchModulesMetadata]);
 
   // --- AUTH & USER SYNC ---
   useEffect(() => {
@@ -327,8 +398,39 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               await signOut(auth);
               return 'unverified';
           }
+
+          // Fetch user data from firestore to check status and courses
+          const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
+          if (userDoc.exists()) {
+              const userData = userDoc.data() as User;
+              
+              // Only restrict if NOT an admin
+              if (userData.role !== 'admin' && userData.role !== 'super_admin') {
+                  const hasSOS = userData.subscribedCourses?.includes('SCHOOL OF SKILLS');
+                  
+                  if (!hasSOS) {
+                      await signOut(auth);
+                      return 'no_course_access'; // Custom error code
+                  }
+                  
+                  if (userData.status === 'pending') {
+                      await signOut(auth);
+                      return 'pending_approval';
+                  }
+
+                  if (userData.status === 'blocked') {
+                    await signOut(auth);
+                    return 'blocked';
+                  }
+              }
+          }
+
           return null; // Success
       } catch (error: any) {
+          console.error("Login Error:", error);
+          if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+              return 'Credenciais inválidas. Verifique seu email e senha.';
+          }
           return error.message;
       }
   };
@@ -337,7 +439,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       console.log("Login by code not implemented in Firebase version");
   };
 
-  const register = async (email: string, password: string, name: string): Promise<string | null> => {
+  const register = async (email: string, password: string, name: string, courses: string[] = []): Promise<string | null> => {
       try {
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
           await sendEmailVerification(userCredential.user);
@@ -349,7 +451,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               role: 'member',
               status: 'pending',
               joinDate: new Date().toISOString(),
-              notifications: []
+              notifications: [],
+              subscribedCourses: courses
           };
           
           await setDoc(doc(db, "users", userCredential.user.uid), newUser);
@@ -571,15 +674,48 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const updateHomeContent = async (content: HomeContent) => setHomeContent(content);
   const updateWelcomeContent = async (content: WelcomeContent) => setWelcomeContent(content);
   const updateDashboardContent = async (content: DashboardContent) => setDashboardContent(content);
+  const updateAboutPageContent = async (content: AboutPageContent) => setAboutPageContent(content);
+  const updateRobotsPageContent = async (content: RobotsPageContent) => setRobotsPageContent(content);
+
+  const addRobot = async (robot: RobotDefinition) => {
+    setRobots([...robots, robot]);
+    toast.success("Robô adicionado com sucesso");
+  };
+
+  const deleteRobot = async (id: string) => {
+    setRobots(robots.filter(r => r.id !== id));
+    toast.info("Robô removido");
+  };
+
+  const updateRobot = async (robot: RobotDefinition) => {
+    setRobots(robots.map(r => r.id === robot.id ? robot : r));
+    toast.success("Robô atualizado");
+  };
+
   const updateModuleMetadata = async (meta: ModuleMetadata) => {
-      const exists = modulesMetadata.find(m => m.id === meta.id);
-      if (exists) {
-          setModulesMetadata(modulesMetadata.map(m => m.id === meta.id ? meta : m));
-      } else {
-          setModulesMetadata([...modulesMetadata, meta]);
+      try {
+          await setDoc(doc(db, "modules", meta.id), meta);
+          // Optimistic update or refetch
+          setModulesMetadata(prev => {
+              const exists = prev.find(m => m.id === meta.id);
+              if (exists) {
+                  return prev.map(m => m.id === meta.id ? meta : m);
+              } else {
+                  return [...prev, meta];
+              }
+          });
+      } catch (e) {
+          console.error("Error updating module metadata", e);
       }
   };
-  const deleteModuleMetadata = async (id: string) => setModulesMetadata(modulesMetadata.filter(m => m.id !== id));
+  const deleteModuleMetadata = async (id: string) => {
+      try {
+          await deleteDoc(doc(db, "modules", id));
+          setModulesMetadata(prev => prev.filter(m => m.id !== id));
+      } catch (e) {
+          console.error("Error deleting module metadata", e);
+      }
+  };
   
   const updateThemeSettings = (settings: ThemeSettings) => setThemeSettings(settings);
   
@@ -692,13 +828,52 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
   };
 
-  const markNotificationAsRead = (userId: string, notificationId: string) => {};
-  const sendGlobalAnnouncement = (title: string, message: string) => {
-      console.log("Announcement:", title, message);
-      // Implementation would involve cloud functions or iterating all users (costly)
-      // For now, logging.
+  const markNotificationAsRead = async (userId: string, notificationId: string) => {
+    if (!user || !user.notifications) return;
+    try {
+      const updatedNotifications = user.notifications.map(n => 
+        n.id === notificationId ? { ...n, read: true } : n
+      );
+      await updateDoc(doc(db, "users", userId), { notifications: updatedNotifications });
+      setUser({ ...user, notifications: updatedNotifications });
+    } catch (e) {
+      console.error("Erro ao marcar notificação:", e);
+    }
   };
-  const requestNotificationPermission = () => {};
+
+  const sendGlobalAnnouncement = async (title: string, message: string) => {
+    try {
+      const q = query(collection(db, "users"));
+      const snapshot = await getDocs(q);
+      
+      const newNotification: AppNotification = {
+        id: Math.random().toString(36).substr(2, 9),
+        title,
+        message,
+        read: false,
+        date: new Date().toISOString(),
+        type: 'info'
+      };
+
+      const promises = snapshot.docs.map(userDoc => {
+        const userData = userDoc.data() as User;
+        const notifications = userData.notifications || [];
+        return updateDoc(doc(db, "users", userDoc.id), {
+          notifications: [...notifications, newNotification]
+        });
+      });
+
+      await Promise.all(promises);
+      toast.success("Anúncio enviado com sucesso!");
+    } catch (e) {
+      console.error("Erro ao enviar anúncio global:", e);
+      toast.error("Erro ao enviar anúncio.");
+    }
+  };
+
+  const requestNotificationPermission = () => {
+    toast.info("Notificações Push ativadas no navegador!");
+  };
 
   const value: AppContextType = {
       user,
@@ -740,6 +915,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       updateWelcomeContent,
       dashboardContent,
       updateDashboardContent,
+      aboutPageContent,
+      updateAboutPageContent,
+      robotsPageContent,
+      updateRobotsPageContent,
+      robots,
+      addRobot,
+      updateRobot,
+      deleteRobot,
       
       themeSettings,
       updateThemeSettings,

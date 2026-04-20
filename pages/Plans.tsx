@@ -100,8 +100,20 @@ const Plans: React.FC = () => {
     });
   };
 
+  const isAdmin = user && (user.role === 'admin' || user.role === 'super_admin');
+
   return (
     <div className="bg-black min-h-screen relative overflow-hidden">
+      {isAdmin && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <button 
+            onClick={() => navigate('/admin-portal', { state: { targetSection: 'plans' } })}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full font-bold shadow-lg shadow-red-900/40 transition-all border border-red-500/20"
+          >
+            <Edit size={18} /> Editar Página
+          </button>
+        </div>
+      )}
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
           <img 
@@ -114,12 +126,12 @@ const Plans: React.FC = () => {
       
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-red-600/10 blur-[120px] rounded-full pointer-events-none"></div>
 
-      <div className="relative pt-32 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="text-center mb-24">
+      <div className="relative pt-20 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="text-center mb-16">
           <span className="text-red-500 font-bold uppercase tracking-widest text-xs border border-red-600/20 bg-red-600/10 px-4 py-1.5 rounded-full mb-6 inline-block">
             {plansPageContent.hero.badge}
           </span>
-          <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-6 tracking-tight leading-tight">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-6 tracking-tight leading-tight">
             {plansPageContent.hero.title}
           </h1>
           <p className="text-lg md:text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
@@ -127,7 +139,7 @@ const Plans: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-32">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
           {plans.map((plan) => (
             <div 
               key={plan.id} 
@@ -202,6 +214,97 @@ const Plans: React.FC = () => {
               </div>
             </div>
           ))}
+        </div>
+        
+        {/* Course Launch Section */}
+        <div className="mt-16 mb-20 relative">
+            <div className="absolute inset-0 bg-red-600/5 blur-[100px] rounded-full pointer-events-none"></div>
+            <div className="relative bg-slate-950/40 backdrop-blur-sm border border-slate-800 rounded-[40px] p-8 md:p-16 overflow-hidden">
+                <div className="flex flex-col lg:flex-row items-center gap-12">
+                    <div className="flex-1 text-center lg:text-left">
+                        <span className="bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-6 inline-block">Lançamento Oficial</span>
+                        <h2 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight">SCHOOL OF <span className="text-red-600 underline decoration-red-600/30 underline-offset-8">SKILLS</span></h2>
+                        <p className="text-slate-400 text-lg mb-8 leading-relaxed">
+                            Domine a revolucionária <strong className="text-white">Rooter Strategy</strong>. Aprenda as técnicas avançadas de leitura de fluxo e posicionamento institucional que os 1% dos traders usam.
+                        </p>
+                        <div className="flex flex-wrap justify-center lg:justify-start gap-4">
+                            <div className="bg-slate-900/80 border border-slate-800 px-6 py-4 rounded-2xl">
+                                <span className="block text-2xl font-bold text-white">100%</span>
+                                <span className="text-xs text-slate-500 uppercase tracking-widest">Prática</span>
+                            </div>
+                            <div className="bg-slate-900/80 border border-slate-800 px-6 py-4 rounded-2xl">
+                                <span className="block text-2xl font-bold text-white">VIP</span>
+                                <span className="text-xs text-slate-500 uppercase tracking-widest">Acesso</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16">
+                    {/* Basic Plan */}
+                    <div className="bg-slate-900/50 border border-slate-800 p-8 rounded-3xl hover:border-red-600/50 transition-all group flex flex-col">
+                        <div className="mb-6">
+                            <h4 className="text-lg font-bold text-white mb-1">Plano Básico</h4>
+                            <p className="text-xs text-slate-500">Ideal para começar</p>
+                        </div>
+                        <div className="text-3xl font-black text-white mb-6">3.000 MT</div>
+                        <ul className="space-y-4 mb-8 flex-grow">
+                            <li className="flex items-start gap-3 text-xs text-slate-400"><CheckCircle2 size={16} className="text-red-500 shrink-0" /> Vídeos Gravados Somente</li>
+                            <li className="flex items-start gap-3 text-xs text-slate-400"><CheckCircle2 size={16} className="text-red-500 shrink-0" /> Dúvidas 1x por Semana</li>
+                            <li className="flex items-start gap-3 text-xs text-slate-400"><CheckCircle2 size={16} className="text-red-500 shrink-0" /> 6 meses de Mentoria</li>
+                        </ul>
+                        <button 
+                            onClick={() => handleSelectPlan({ id: 'sos_basic', name: 'SOS Basic', price: '3.000 MT', features: [] })}
+                            className="w-full py-4 bg-white text-black font-bold rounded-xl text-xs uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all shadow-xl"
+                        >
+                            Assinar Básico
+                        </button>
+                    </div>
+
+                    {/* Gold Plan */}
+                    <div className="bg-slate-900 border-2 border-red-600 p-8 rounded-3xl scale-105 shadow-[0_0_40px_rgba(220,38,38,0.2)] flex flex-col relative">
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase">Recomendado</div>
+                        <div className="mb-6">
+                            <h4 className="text-lg font-bold text-white mb-1">Plano Gold</h4>
+                            <p className="text-xs text-red-500 font-bold uppercase tracking-wider">Acesso VIP</p>
+                        </div>
+                        <div className="text-3xl font-black text-white mb-6">7.000 MT</div>
+                        <ul className="space-y-4 mb-8 flex-grow">
+                            <li className="flex items-start gap-3 text-xs text-slate-300"><CheckCircle2 size={16} className="text-red-500 shrink-0" /> Todo Material do Curso</li>
+                            <li className="flex items-start gap-3 text-xs text-slate-300"><CheckCircle2 size={16} className="text-red-500 shrink-0" /> Grupo VIP Exclusivo</li>
+                            <li className="flex items-start gap-3 text-xs text-slate-300"><CheckCircle2 size={16} className="text-red-500 shrink-0" /> Mentoria Colectiva (Online)</li>
+                            <li className="flex items-start gap-3 text-xs text-slate-300"><CheckCircle2 size={16} className="text-red-500 shrink-0" /> 1 Ano de Mentoria</li>
+                        </ul>
+                        <button 
+                            onClick={() => handleSelectPlan({ id: 'sos_gold', name: 'SOS Gold', price: '7.000 MT', features: [] })}
+                            className="w-full py-4 bg-red-600 text-white font-bold rounded-xl text-xs uppercase tracking-widest hover:bg-red-700 transition-all shadow-xl shadow-red-900/40"
+                        >
+                            Explodir Resultados
+                        </button>
+                    </div>
+
+                    {/* Premium Plan */}
+                    <div className="bg-slate-900/50 border border-slate-800 p-8 rounded-3xl hover:border-amber-500/50 transition-all group flex flex-col">
+                        <div className="mb-6">
+                            <h4 className="text-lg font-bold text-white mb-1">Plano Premium</h4>
+                            <p className="text-xs text-amber-500 font-bold uppercase tracking-wider">Acesso Master</p>
+                        </div>
+                        <div className="text-3xl font-black text-white mb-6">12.000 MT</div>
+                        <ul className="space-y-4 mb-8 flex-grow">
+                            <li className="flex items-start gap-3 text-xs text-slate-400"><CheckCircle2 size={16} className="text-amber-500 shrink-0" /> Todo Conteúdo VIP</li>
+                            <li className="flex items-start gap-3 text-xs text-slate-400"><CheckCircle2 size={16} className="text-amber-500 shrink-0" /> Acesso ao Grupo VIP</li>
+                            <li className="flex items-start gap-3 text-xs text-slate-400"><CheckCircle2 size={16} className="text-amber-500 shrink-0" /> Mentoria Privada Individual</li>
+                            <li className="flex items-start gap-3 text-xs text-slate-400"><CheckCircle2 size={16} className="text-amber-500 shrink-0" /> Mentoria Colectiva</li>
+                        </ul>
+                        <button 
+                            onClick={() => handleSelectPlan({ id: 'sos_premium', name: 'SOS Premium', price: '12.000 MT', features: [] })}
+                            className="w-full py-4 bg-amber-500 text-black font-bold rounded-xl text-xs uppercase tracking-widest hover:bg-amber-400 transition-all shadow-xl shadow-amber-900/20"
+                        >
+                            Caminho do Mestre
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         {/* Why Choose FXBROS Section */}

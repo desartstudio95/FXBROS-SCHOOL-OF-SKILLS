@@ -36,7 +36,11 @@ const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [isBuffering, setIsBuffering] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [errorState, setErrorState] = useState<{ hasError: boolean, message: string }>({ hasError: false, message: '' });
+
+  const speeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
   // Helper to normalize video URLs
   const getEmbedUrl = (url: string) => {
@@ -80,7 +84,14 @@ const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
     setCurrentTime(0);
     setDuration(0);
     setIsBuffering(false);
+    setPlaybackSpeed(1);
   }, [src, finalSrc, isEmbed]);
+
+  useEffect(() => {
+    if (videoRef.current) {
+        videoRef.current.playbackRate = playbackSpeed;
+    }
+  }, [playbackSpeed]);
 
   useEffect(() => {
     if (autoPlay && videoRef.current && !isEmbed && !errorState.hasError && finalSrc) {
@@ -110,6 +121,20 @@ const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
       }
     };
   }, []);
+
+  // Close speed menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+        if (showSpeedMenu && containerRef.current && !containerRef.current.contains(event.target as Node)) {
+            setShowSpeedMenu(false);
+        }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSpeedMenu]);
 
   // --- VALIDATION ---
   if (!src) {
@@ -202,6 +227,7 @@ const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
           if (Number.isFinite(total)) {
               setDuration(total);
           }
+          videoRef.current.playbackRate = playbackSpeed;
       }
   };
 
@@ -258,7 +284,7 @@ const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
       clearTimeout(controlsTimeoutRef.current);
     }
     controlsTimeoutRef.current = setTimeout(() => {
-      if (isPlaying) setShowControls(false);
+      if (isPlaying && !showSpeedMenu) setShowControls(false);
     }, 3000);
   };
 
@@ -270,13 +296,18 @@ const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
       }
   };
 
+  const handleSpeedChange = (speed: number) => {
+    setPlaybackSpeed(speed);
+    setShowSpeedMenu(false);
+  };
+
   return (
     <div 
       ref={containerRef}
       className={`relative w-full aspect-video bg-black rounded-2xl overflow-hidden group select-none shadow-2xl ring-1 ring-slate-800/50 ${className}`}
       style={style}
       onMouseMove={handleMouseMove}
-      onMouseLeave={() => !useNativeControls && isPlaying && setShowControls(false)}
+      onMouseLeave={() => !useNativeControls && isPlaying && !showSpeedMenu && setShowControls(false)}
     >
       <video
         ref={videoRef}
@@ -350,6 +381,25 @@ const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
               <h3 className="text-white font-bold text-lg drop-shadow-md">{title || 'Video Player'}</h3>
           </div>
 
+          {/* Speed Menu Dropdown */}
+          {showSpeedMenu && (
+              <div className="absolute bottom-16 right-4 bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-xl overflow-hidden shadow-2xl z-30 min-w-[120px]">
+                  <div className="p-3 border-b border-slate-800 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">
+                      Velocidade
+                  </div>
+                  {speeds.map((speed) => (
+                      <button 
+                          key={speed}
+                          onClick={() => handleSpeedChange(speed)}
+                          className={`w-full px-4 py-2.5 text-sm font-medium flex items-center justify-between transition-colors ${playbackSpeed === speed ? 'bg-red-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
+                      >
+                          <span>{speed === 1 ? 'Normal' : `${speed}x`}</span>
+                          {playbackSpeed === speed && <Settings size={12} fill="currentColor" />}
+                      </button>
+                  ))}
+              </div>
+          )}
+
           {/* Controls Bar (Bottom) */}
           <div className={`absolute bottom-0 left-0 w-full px-4 pb-4 pt-12 bg-gradient-to-t from-black/90 via-black/60 to-transparent transition-opacity duration-300 z-20 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
             
@@ -401,7 +451,11 @@ const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
               </div>
 
               <div className="flex items-center gap-4">            
-                <button className="text-slate-400 hover:text-white transition-colors">
+                <button 
+                    onClick={(e) => { e.stopPropagation(); setShowSpeedMenu(!showSpeedMenu); }}
+                    className={`text-slate-400 hover:text-white transition-colors flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-white/5 ${showSpeedMenu ? 'text-red-500 bg-white/5' : ''}`}
+                >
+                    <span className="text-[10px] font-bold font-mono">{playbackSpeed}x</span>
                     <Settings size={20} />
                 </button>
                 <button onClick={toggleFullscreen} className="text-white hover:text-red-500 transition-colors">

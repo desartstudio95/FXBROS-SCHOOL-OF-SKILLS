@@ -75,7 +75,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
 const STORAGE_KEY = 'fxbros_ai_history';
 
 const AIAssistant: React.FC = () => {
-  const { user, plans } = useApp();
+  const { user, plans, dashboardContent } = useApp();
   const [input, setInput] = useState('');
   
   // Initialize messages from LocalStorage
@@ -121,7 +121,11 @@ const AIAssistant: React.FC = () => {
 
   // Check Plan Permissions
   // IDs defined in AppContext: 'starter', 'pro', 'professional', 'elite'
-  const allowedCoderPlans = ['pro', 'professional', 'elite']; 
+  const allowedCoderPlans = ['elite']; 
+  if (dashboardContent.devQuantForPro) {
+      allowedCoderPlans.push('pro');
+      allowedCoderPlans.push('professional');
+  }
   
   const hasCoderAccess = 
       user?.role === 'admin' || 
@@ -165,7 +169,7 @@ const AIAssistant: React.FC = () => {
 
     try {
       // Initialize Gemini
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       
       let systemInstruction = "";
       let modelName = "gemini-3-flash-preview"; // Default fast model
@@ -296,7 +300,7 @@ const AIAssistant: React.FC = () => {
                             <div className="flex flex-col items-center gap-1">
                                 <Lock size={16} className="text-amber-500 mb-1" />
                                 <span className="text-amber-500 font-bold uppercase tracking-wider">Recurso Bloqueado</span>
-                                <span className="leading-relaxed">Disponível exclusivamente para membros <strong>Pro</strong> e <strong>Elite</strong>.</span>
+                                <span className="leading-relaxed">Disponível exclusivamente para membros {dashboardContent.devQuantForPro ? 'Pro e ' : ''}<strong>Elite</strong>.</span>
                             </div>
                             <div className="absolute bottom-[-6px] left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-900 border-r border-b border-slate-700 rotate-45"></div>
                         </div>

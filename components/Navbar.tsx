@@ -31,7 +31,7 @@ const Navbar: React.FC = () => {
               alt="FXBROS Logo" 
               className="w-10 h-10 object-contain transform group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_10px_rgba(220,38,38,0.5)]" 
             />
-            <span className="text-2xl font-bold text-white font-sans tracking-tight">
+            <span className="text-2xl font-bold text-white font-heading tracking-tight">
               FXBROS<span className="text-red-600">.</span>
             </span>
           </Link>
@@ -39,6 +39,8 @@ const Navbar: React.FC = () => {
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center space-x-8">
             <Link to="/" className="text-slate-300 hover:text-white transition-colors text-sm font-medium uppercase tracking-wide">Início</Link>
+            <Link to="/robots" className="text-slate-300 hover:text-white transition-colors text-sm font-medium uppercase tracking-wide">Robôs</Link>
+            <Link to="/about" className="text-slate-300 hover:text-white transition-colors text-sm font-medium uppercase tracking-wide">Sobre Nós</Link>
             <Link to="/plans" className="text-slate-300 hover:text-white transition-colors text-sm font-medium uppercase tracking-wide">Planos</Link>
             
             {user ? (
@@ -90,6 +92,20 @@ const Navbar: React.FC = () => {
               className="block px-3 py-3 text-slate-300 hover:text-white hover:bg-slate-800 rounded-md uppercase tracking-wide font-medium"
             >
               Início
+            </Link>
+            <Link 
+              to="/robots" 
+              onClick={() => setIsMenuOpen(false)}
+              className="block px-3 py-3 text-slate-300 hover:text-white hover:bg-slate-800 rounded-md uppercase tracking-wide font-medium"
+            >
+              Robôs
+            </Link>
+            <Link 
+              to="/about" 
+              onClick={() => setIsMenuOpen(false)}
+              className="block px-3 py-3 text-slate-300 hover:text-white hover:bg-slate-800 rounded-md uppercase tracking-wide font-medium"
+            >
+              Sobre Nós
             </Link>
             <Link 
               to="/plans"

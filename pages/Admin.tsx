@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { Navigate, useLocation } from 'react-router-dom';
-import { UploadCloud, Link as LinkIcon, Plus, Video, Trash2, Check, Edit3, X, CreditCard, LayoutList, Star, Globe, Save, ShieldCheck, Palette, Type, Users, UserCheck, UserX, AlertCircle, Layers, CheckCircle2, FileText, Download, Loader2, Megaphone, Send, User, AlignLeft, Image as ImageIcon, Box, Film, Clock, LayoutGrid, Sparkles, FileType, MessageSquare, Play, Calendar, Eye, Lock } from 'lucide-react';
-import { VideoLesson, PricingPlan, HomeContent, User as UserType, ModuleResource, PlansPageContent, ModuleMetadata, WelcomeContent, DashboardContent } from '../types';
+import { UploadCloud, Link as LinkIcon, Plus, Video, Trash2, Check, Edit3, X, CreditCard, LayoutList, Star, Globe, Save, ShieldCheck, Palette, Type, Users, UserCheck, UserX, AlertCircle, Layers, CheckCircle2, FileText, Download, Loader2, Megaphone, Send, User, AlignLeft, Image as ImageIcon, Box, Film, Clock, LayoutGrid, Sparkles, FileType, MessageSquare, Play, Calendar, Eye, Lock, Unlock, Bot } from 'lucide-react';
+import { VideoLesson, PricingPlan, HomeContent, User as UserType, ModuleResource, PlansPageContent, ModuleMetadata, WelcomeContent, DashboardContent, AboutPageContent, RobotsPageContent, RobotDefinition } from '../types';
 import { doc, collection } from "firebase/firestore";
 import { db } from "../firebaseConfig";
 
@@ -56,15 +56,15 @@ const generateVideoThumbnail = (file: File): Promise<Blob | null> => {
 };
 
 const Admin: React.FC = () => {
-  const { user, videos, addVideo, deleteVideo, updateVideo, uploadVideo, uploadImage, resources, uploadResource, deleteResource, plans, addPlan, deletePlan, updatePlan, homeContent, updateHomeContent, themeSettings, updateThemeSettings, allUsers, updateUserStatus, updateUserModules, updateUserPlan, deleteUser, sendGlobalAnnouncement, plansPageContent, updatePlansPageContent, updateModuleMetadata, deleteModuleMetadata, modulesMetadata, welcomeContent, updateWelcomeContent, dashboardContent, updateDashboardContent, testimonials, deleteTestimonial } = useApp();
+  const { user, videos, addVideo, deleteVideo, updateVideo, uploadVideo, uploadImage, resources, uploadResource, deleteResource, plans, addPlan, deletePlan, updatePlan, homeContent, updateHomeContent, themeSettings, updateThemeSettings, allUsers, updateUserStatus, updateUserModules, updateUserPlan, deleteUser, sendGlobalAnnouncement, plansPageContent, updatePlansPageContent, updateModuleMetadata, deleteModuleMetadata, modulesMetadata, welcomeContent, updateWelcomeContent, dashboardContent, updateDashboardContent, testimonials, deleteTestimonial, aboutPageContent, updateAboutPageContent, robotsPageContent, updateRobotsPageContent, robots, addRobot, updateRobot, deleteRobot } = useApp();
   const location = useLocation();
   
   const initialSection = user?.role === 'super_admin' ? 'cms' : 'members';
 
-  const [activeSection, setActiveSection] = useState<'videos' | 'plans' | 'cms' | 'appearance' | 'members' | 'announcements' | 'reviews'>(initialSection);
+  const [activeSection, setActiveSection] = useState<'videos' | 'plans' | 'cms' | 'appearance' | 'members' | 'announcements' | 'reviews' | 'robots'>(initialSection);
   const [activeContentTab, setActiveContentTab] = useState<'videos' | 'resources' | 'modules'>('modules');
   const [activePlanTab, setActivePlanTab] = useState<'cards' | 'page_settings'>('cards');
-  const [activeCmsTab, setActiveCmsTab] = useState<'home' | 'plans' | 'welcome' | 'dashboard'>('home');
+  const [activeCmsTab, setActiveCmsTab] = useState<'home' | 'plans' | 'welcome' | 'dashboard' | 'about' | 'robots_page'>('home');
 
   // --- UPLOAD STATE ---
   const [isUploading, setIsUploading] = useState(false);
@@ -143,6 +143,21 @@ const Admin: React.FC = () => {
   const [plansCmsData, setPlansCmsData] = useState<PlansPageContent>(plansPageContent);
   const [welcomeCmsData, setWelcomeCmsData] = useState<WelcomeContent>(welcomeContent);
   const [dashboardCmsData, setDashboardCmsData] = useState<DashboardContent>(dashboardContent);
+  const [aboutCmsData, setAboutCmsData] = useState<AboutPageContent>(aboutPageContent);
+  const [robotsCmsData, setRobotsCmsData] = useState<RobotsPageContent>(robotsPageContent);
+
+  // --- ROBOT MANAGEMENT STATE ---
+  const [isRobotEditing, setIsRobotEditing] = useState(false);
+  const [editRobotId, setEditRobotId] = useState<string | null>(null);
+  const [robotFormData, setRobotFormData] = useState({
+    name: '',
+    type: '',
+    description: '',
+    price: '',
+    features: '',
+    image: '',
+    accent: 'red'
+  });
 
   const [localThemeSettings, setLocalThemeSettings] = useState(themeSettings);
   const [successMsg, setSuccessMsg] = useState('');
@@ -200,7 +215,9 @@ const Admin: React.FC = () => {
     setPlansCmsData(plansPageContent);
     setWelcomeCmsData(welcomeContent);
     setDashboardCmsData(dashboardContent);
-  }, [homeContent, plansPageContent, welcomeContent, dashboardContent]);
+    setAboutCmsData(aboutPageContent);
+    setRobotsCmsData(robotsPageContent);
+  }, [homeContent, plansPageContent, welcomeContent, dashboardContent, aboutPageContent, robotsPageContent]);
 
   useEffect(() => {
     setLocalThemeSettings(themeSettings);
@@ -294,7 +311,10 @@ const Admin: React.FC = () => {
       // If a new file is selected, upload it
       if (moduleImageFile) {
           try {
-             thumb = await uploadImage(moduleImageFile, 'module_thumbnails');
+             // Use 'modules' folder and module ID + extension as filename for consistency
+             const fileExt = moduleImageFile.name.split('.').pop() || 'jpg';
+             const fileName = `${moduleMetaFormData.id}.${fileExt}`;
+             thumb = await uploadImage(moduleImageFile, 'modules', fileName);
           } catch (e: any) {
              showToast('Erro ao fazer upload da imagem: ' + e.message);
              setIsUploading(false);
@@ -572,6 +592,56 @@ const Admin: React.FC = () => {
       }
   };
 
+  const handleRobotSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newRobot: RobotDefinition = {
+      id: isRobotEditing ? editRobotId! : Date.now().toString(),
+      name: robotFormData.name,
+      type: robotFormData.type,
+      description: robotFormData.description,
+      price: robotFormData.price,
+      features: robotFormData.features.split('\n').filter(f => f.trim()),
+      image: robotFormData.image,
+      accent: robotFormData.accent
+    };
+
+    if (isRobotEditing) {
+      updateRobot(newRobot);
+    } else {
+      addRobot(newRobot);
+    }
+
+    setIsRobotEditing(false);
+    setEditRobotId(null);
+    setRobotFormData({ name: '', type: '', description: '', price: '', features: '', image: '', accent: 'red' });
+  };
+
+  const handleEditRobot = (robot: RobotDefinition) => {
+    setIsRobotEditing(true);
+    setEditRobotId(robot.id);
+    setRobotFormData({
+      name: robot.name,
+      type: robot.type,
+      description: robot.description,
+      price: robot.price,
+      features: robot.features.join('\n'),
+      image: robot.image,
+      accent: robot.accent
+    });
+  };
+
+  const handleAboutContentSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateAboutPageContent(aboutCmsData);
+    showToast('Página Sobre Nós atualizada.');
+  };
+
+  const handleRobotsPageContentSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateRobotsPageContent(robotsCmsData);
+    showToast('Página de Robôs atualizada.');
+  };
+
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col md:flex-row">
@@ -595,6 +665,9 @@ const Admin: React.FC = () => {
           </button>
           <button onClick={() => setActiveSection('plans')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeSection === 'plans' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}>
             <CreditCard size={18} /> Planos & Pagamentos
+          </button>
+          <button onClick={() => setActiveSection('robots')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeSection === 'robots' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}>
+            <Bot size={18} /> Robôs (Catálogo)
           </button>
           <button onClick={() => setActiveSection('cms')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeSection === 'cms' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}>
             <LayoutList size={18} /> CMS (Site)
@@ -711,6 +784,19 @@ const Admin: React.FC = () => {
                                     <p className="text-xs text-slate-500">{mod.description}</p>
                                 </div>
                                 <div className="flex gap-2">
+                                    <button 
+                                        onClick={() => {
+                                            updateModuleMetadata({
+                                                ...mod,
+                                                isLocked: !mod.isLocked
+                                            });
+                                            showToast(`Módulo ${!mod.isLocked ? 'bloqueado' : 'desbloqueado'} com sucesso.`);
+                                        }} 
+                                        className={`p-2 rounded transition-colors ${mod.isLocked ? 'text-amber-500 hover:bg-amber-500/10' : 'text-slate-400 hover:bg-slate-800'}`}
+                                        title={mod.isLocked ? 'Desbloquear Módulo' : 'Bloquear Módulo'}
+                                    >
+                                        {mod.isLocked ? <Lock size={16} /> : <Unlock size={16} />}
+                                    </button>
                                     <button onClick={() => handleEditModule(mod)} className="p-2 text-blue-400 hover:bg-slate-800 rounded"><Edit3 size={16} /></button>
                                     <button onClick={() => handleDeleteModule(mod.id)} className="p-2 text-red-400 hover:bg-slate-800 rounded"><Trash2 size={16} /></button>
                                 </div>
@@ -1046,6 +1132,8 @@ const Admin: React.FC = () => {
                 <div className="flex gap-4 mb-6 flex-wrap">
                     <button onClick={() => setActiveCmsTab('home')} className={`px-4 py-2 rounded-full text-sm font-bold ${activeCmsTab === 'home' ? 'bg-white text-black' : 'bg-slate-900 text-slate-400'}`}>Home Page</button>
                     <button onClick={() => setActiveCmsTab('welcome')} className={`px-4 py-2 rounded-full text-sm font-bold ${activeCmsTab === 'welcome' ? 'bg-white text-black' : 'bg-slate-900 text-slate-400'}`}>Boas-vindas</button>
+                    <button onClick={() => setActiveCmsTab('about')} className={`px-4 py-2 rounded-full text-sm font-bold ${activeCmsTab === 'about' ? 'bg-white text-black' : 'bg-slate-900 text-slate-400'}`}>Sobre Nós</button>
+                    <button onClick={() => setActiveCmsTab('robots_page')} className={`px-4 py-2 rounded-full text-sm font-bold ${activeCmsTab === 'robots_page' ? 'bg-white text-black' : 'bg-slate-900 text-slate-400'}`}>Robôs (Página)</button>
                     <button onClick={() => setActiveCmsTab('dashboard')} className={`px-4 py-2 rounded-full text-sm font-bold ${activeCmsTab === 'dashboard' ? 'bg-white text-black' : 'bg-slate-900 text-slate-400'}`}>Dashboard Banner</button>
                 </div>
 
@@ -1099,6 +1187,84 @@ const Admin: React.FC = () => {
                         <button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-bold">Salvar Dashboard</button>
                     </form>
                 )}
+
+                {activeCmsTab === 'about' && (
+                    <form onSubmit={handleAboutContentSubmit} className="space-y-6 max-w-4xl">
+                        <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+                            <h3 className="text-lg font-bold mb-4 text-red-500">Sobre Nós Hero</h3>
+                            <div className="grid gap-4">
+                                <input type="text" value={aboutCmsData.hero.title} onChange={e => setAboutCmsData({...aboutCmsData, hero: {...aboutCmsData.hero, title: e.target.value}})} className="bg-black border border-slate-800 rounded p-2 text-white" placeholder="Título" />
+                                <textarea value={aboutCmsData.hero.description} onChange={e => setAboutCmsData({...aboutCmsData, hero: {...aboutCmsData.hero, description: e.target.value}})} className="bg-black border border-slate-800 rounded p-2 text-white" placeholder="Descrição" />
+                            </div>
+                        </div>
+                        <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+                            <h3 className="text-lg font-bold mb-4 text-red-500">Missão</h3>
+                            <div className="grid gap-4">
+                                <input type="text" value={aboutCmsData.mission.title} onChange={e => setAboutCmsData({...aboutCmsData, mission: {...aboutCmsData.mission, title: e.target.value}})} className="bg-black border border-slate-800 rounded p-2 text-white" placeholder="Título Missão" />
+                                <textarea value={aboutCmsData.mission.description} onChange={e => setAboutCmsData({...aboutCmsData, mission: {...aboutCmsData.mission, description: e.target.value}})} className="bg-black border border-slate-800 rounded p-2 text-white" placeholder="Descrição Missão" />
+                                <input type="text" value={aboutCmsData.mission.image} onChange={e => setAboutCmsData({...aboutCmsData, mission: {...aboutCmsData.mission, image: e.target.value}})} className="bg-black border border-slate-800 rounded p-2 text-white" placeholder="URL Imagem Missão" />
+                            </div>
+                        </div>
+                        <button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-bold">Salvar Página Sobre Nós</button>
+                    </form>
+                )}
+
+                {activeCmsTab === 'robots_page' && (
+                    <form onSubmit={handleRobotsPageContentSubmit} className="space-y-6 max-w-4xl">
+                        <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+                            <h3 className="text-lg font-bold mb-4 text-red-500">Página de Robôs Hero</h3>
+                            <div className="grid gap-4">
+                                <input type="text" value={robotsCmsData.hero.title} onChange={e => setRobotsCmsData({...robotsCmsData, hero: {...robotsCmsData.hero, title: e.target.value}})} className="bg-black border border-slate-800 rounded p-2 text-white" placeholder="Título" />
+                                <textarea value={robotsCmsData.hero.description} onChange={e => setRobotsCmsData({...robotsCmsData, hero: {...robotsCmsData.hero, description: e.target.value}})} className="bg-black border border-slate-800 rounded p-2 text-white" placeholder="Descrição" />
+                            </div>
+                        </div>
+                        <button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-bold">Salvar Página de Robôs</button>
+                    </form>
+                )}
+            </div>
+        )}
+
+        {/* ROBOTS LIST SECTION */}
+        {activeSection === 'robots' && (
+            <div className="space-y-8">
+                <h2 className="text-2xl font-bold border-b border-slate-800 pb-4 flex items-center gap-2">
+                    <Bot className="text-red-600" /> Catálogo de Robôs
+                </h2>
+                <div className="grid lg:grid-cols-2 gap-8">
+                    <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 h-fit">
+                        <h3 className="text-lg font-bold mb-4">{isRobotEditing ? 'Editar Robô' : 'Novo Robô'}</h3>
+                        <form onSubmit={handleRobotSubmit} className="space-y-4">
+                            <input type="text" value={robotFormData.name} onChange={e => setRobotFormData({...robotFormData, name: e.target.value})} className="w-full bg-black border border-slate-800 rounded p-2 text-white" placeholder="Nome do Robô" required />
+                            <input type="text" value={robotFormData.type} onChange={e => setRobotFormData({...robotFormData, type: e.target.value})} className="w-full bg-black border border-slate-800 rounded p-2 text-white" placeholder="Tipo (Ex: Scalping HFT)" required />
+                            <textarea value={robotFormData.description} onChange={e => setRobotFormData({...robotFormData, description: e.target.value})} className="w-full bg-black border border-slate-800 rounded p-2 text-white" placeholder="Descrição Curta" />
+                            <input type="text" value={robotFormData.price} onChange={e => setRobotFormData({...robotFormData, price: e.target.value})} className="w-full bg-black border border-slate-800 rounded p-2 text-white" placeholder="Preço" />
+                            <input type="text" value={robotFormData.image} onChange={e => setRobotFormData({...robotFormData, image: e.target.value})} className="w-full bg-black border border-slate-800 rounded p-2 text-white" placeholder="URL Imagem" />
+                            <textarea rows={4} value={robotFormData.features} onChange={e => setRobotFormData({...robotFormData, features: e.target.value})} className="w-full bg-black border border-slate-800 rounded p-2 text-white" placeholder="Recursos (um por linha)" />
+                            
+                            <div className="flex gap-2">
+                                <button type="submit" className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded font-bold">
+                                    {isRobotEditing ? 'Atualizar' : 'Adicionar'}
+                                </button>
+                                {isRobotEditing && <button type="button" onClick={() => setIsRobotEditing(false)} className="px-4 py-2 bg-slate-800 text-white rounded">Cancelar</button>}
+                            </div>
+                        </form>
+                    </div>
+                    <div className="space-y-4">
+                        {robots.map(robot => (
+                            <div key={robot.id} className="bg-slate-900 p-4 rounded-xl border border-slate-800 flex items-center gap-4">
+                                <img src={robot.image} alt={robot.name} className="w-16 h-16 rounded object-cover" />
+                                <div className="flex-1">
+                                    <h4 className="font-bold">{robot.name}</h4>
+                                    <p className="text-xs text-slate-500">{robot.type} - {robot.price}</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button onClick={() => handleEditRobot(robot)} className="p-2 text-blue-400 hover:bg-slate-800 rounded"><Edit3 size={16} /></button>
+                                    <button onClick={() => deleteRobot(robot.id)} className="p-2 text-red-400 hover:bg-slate-800 rounded"><Trash2 size={16} /></button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
         )}
         

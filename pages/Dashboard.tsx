@@ -1,12 +1,14 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { PlayCircle, Clock, BookOpen, Search, Bell, ChevronRight, CheckCircle2, CheckCircle, Heart, Settings, X, User as UserIcon, Camera, LayoutGrid, ArrowLeft, ArrowRight, Play, FileText, Download, Check, Upload, ListMusic, ChevronDown, LogOut, Bot, Sparkles, Menu, Loader2, Save, Trash2, AlertTriangle, Mail, GraduationCap, Trophy, Target, RefreshCw, Eye, SkipForward, MessageSquarePlus, Star, Layers, Calculator, DollarSign, Percent, Calendar, TrendingUp, Activity, BarChart2, Edit2, Info, Maximize2, Minimize2, Lock, Sun, Moon } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { PlayCircle, Clock, BookOpen, Search, Bell, BellOff, ChevronRight, CheckCircle2, CheckCircle, Heart, Settings, X, User as UserIcon, Camera, LayoutGrid, ArrowLeft, ArrowRight, Play, FileText, Download, Check, Upload, ListMusic, ChevronDown, LogOut, Bot, Sparkles, Menu, Loader2, Save, Trash2, AlertTriangle, Mail, GraduationCap, Trophy, Target, RefreshCw, Eye, SkipForward, MessageSquarePlus, Star, Layers, Calculator, DollarSign, Percent, Calendar, TrendingUp, Activity, BarChart2, Edit2, Info, Maximize2, Minimize2, Lock, Sun, Moon } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { VideoLesson, ModuleResource } from '../types';
+import { VideoLesson, ModuleResource, ModuleMetadata, DashboardContent } from '../types';
 import AIAssistant from '../components/AIAssistant';
 import PdfViewer from '../components/PdfViewer';
 import CustomVideoPlayer from '../components/CustomVideoPlayer';
 import ChartComments from '../components/ChartComments';
+import VIPChat from '../components/VIPChat';
 
 interface ModuleData {
   name: string;
@@ -69,16 +71,53 @@ const QUIZ_QUESTIONS = [
 ];
 
 const Dashboard: React.FC = () => {
-  const { user, loadingAuth, videos, resources, completedVideoIds, toggleVideoCompletion, favoriteVideoIds, toggleVideoFavorite, modulesMetadata, logout, dashboardContent, updateUserProfile, deleteAccount, addTestimonial, refreshUserProfile } = useApp();
+  const { 
+    user, 
+    loadingAuth, 
+    videos, 
+    resources, 
+    completedVideoIds, 
+    toggleVideoCompletion, 
+    favoriteVideoIds, 
+    toggleVideoFavorite, 
+    modulesMetadata, 
+    logout, 
+    dashboardContent, 
+    updateDashboardContent,
+    markNotificationAsRead,
+    sendGlobalAnnouncement,
+    updateUserProfile, 
+    deleteAccount, 
+    addTestimonial, 
+    refreshUserProfile, 
+    uploadImage, 
+    updateModuleMetadata 
+  } = useApp();
   const navigate = useNavigate();
 
   // State
-  const [activeTab, setActiveTab] = useState<'home' | 'modules' | 'ai' | 'calculator' | 'resources' | 'favorites' | 'settings' | 'quiz' | 'calendar' | 'chart'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'modules' | 'ai' | 'calculator' | 'resources' | 'favorites' | 'settings' | 'quiz' | 'calendar' | 'chart' | 'chat'>('home');
   const [selectedVideo, setSelectedVideo] = useState<VideoLesson | null>(null);
   const [viewingResource, setViewingResource] = useState<ModuleResource | null>(null); // For PDF/Video Viewer
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedModules, setExpandedModules] = useState<string[]>([]);
+
+  // Module Editing State
+  const [isEditModuleModalOpen, setIsEditModuleModalOpen] = useState(false);
+  const [editingModule, setEditingModule] = useState<ModuleMetadata | null>(null);
+  const [moduleThumbnailFile, setModuleThumbnailFile] = useState<File | null>(null);
+  const [moduleThumbnailPreview, setModuleThumbnailPreview] = useState<string | null>(null);
+  const [isSavingModule, setIsSavingModule] = useState(false);
+
+  // Dashboard CMS State
+  const [isEditDashboardModalOpen, setIsEditDashboardModalOpen] = useState(false);
+  const [editDashboardContent, setEditDashboardContent] = useState<DashboardContent>(dashboardContent);
+  const [isSavingDashboard, setIsSavingDashboard] = useState(false);
+
+  // Notifications State
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Settings State
   const [editName, setEditName] = useState('');
@@ -122,8 +161,16 @@ const Dashboard: React.FC = () => {
           setNewPhotoFile(null);
           setPhotoPreview(null);
           setPhotoAction('keep');
+          
+          // Count unread notifications
+          const unread = user.notifications?.filter(n => !n.read).length || 0;
+          setUnreadCount(unread);
       }
   }, [user]);
+
+  useEffect(() => {
+    setEditDashboardContent(dashboardContent);
+  }, [dashboardContent]);
 
   // Derived Data
   const modules = useMemo(() => {
@@ -139,7 +186,7 @@ const Dashboard: React.FC = () => {
         name,
         videos: vids,
         count: vids.length
-    }));
+    })).sort((a, b) => a.name.localeCompare(b.name));
   }, [videos]);
 
   const filteredModules = useMemo(() => {
@@ -234,6 +281,55 @@ const Dashboard: React.FC = () => {
       } finally {
           setIsSavingProfile(false);
       }
+  };
+
+  const handleSaveModule = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!editingModule) return;
+      
+      setIsSavingModule(true);
+      try {
+          let thumbUrl = editingModule.thumbnail;
+          if (moduleThumbnailFile) {
+              // Upload to 'modules' folder using module ID + extension as filename
+              const fileExt = moduleThumbnailFile.name.split('.').pop() || 'jpg';
+              const fileName = `${editingModule.id}.${fileExt}`;
+              thumbUrl = await uploadImage(moduleThumbnailFile, 'modules', fileName);
+          }
+          
+          await updateModuleMetadata({
+              ...editingModule,
+              thumbnail: thumbUrl
+          });
+          
+          setIsEditModuleModalOpen(false);
+          setEditingModule(null);
+          setModuleThumbnailFile(null);
+          setModuleThumbnailPreview(null);
+      } catch (error) {
+          console.error("Error saving module", error);
+      } finally {
+          setIsSavingModule(false);
+      }
+  };
+
+  const handleSaveDashboardCMS = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingDashboard(true);
+    try {
+      await updateDashboardContent(editDashboardContent);
+      setIsEditDashboardModalOpen(false);
+    } catch (error) {
+      console.error("Error saving dashboard CMS", error);
+    } finally {
+      setIsSavingDashboard(false);
+    }
+  };
+
+  const handleMarkAsRead = (id: string) => {
+    if (user) {
+      markNotificationAsRead(user.id, id);
+    }
   };
 
   const handleManualRefresh = async () => {
@@ -356,13 +452,26 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-black text-white flex">
         {/* Mobile Header */}
-        <div className="lg:hidden fixed top-0 left-0 w-full bg-slate-950 border-b border-slate-900 z-50 px-4 py-3 flex items-center justify-between backdrop-blur-md bg-opacity-90">
+        <div className="lg:hidden fixed top-0 left-0 w-full bg-slate-950/95 border-b border-slate-900 z-50 px-6 py-5 flex items-center justify-between backdrop-blur-md">
             <div className="flex items-center gap-3">
-                <button onClick={() => setIsSidebarOpen(true)}><Menu size={24} className="text-slate-300"/></button>
-                <span className="font-bold text-lg tracking-tight">FXBROS<span className="text-red-600">.</span></span>
+                <button onClick={() => setIsSidebarOpen(true)} className="p-1 -ml-1 hover:bg-slate-900 rounded-lg transition-colors"><Menu size={24} className="text-slate-300"/></button>
+                <span className="font-bold text-xl tracking-tight">FXBROS<span className="text-red-600">.</span></span>
             </div>
-            <div className="w-8 h-8 rounded-full bg-slate-800 overflow-hidden ring-2 ring-red-900/50">
-                <img src={user.avatar} alt="User" className="w-full h-full object-cover" />
+            <div className="flex items-center gap-4">
+                <button 
+                  onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                  className="relative p-2 text-slate-400 hover:text-white transition-colors bg-slate-900/50 rounded-full"
+                >
+                  <Bell size={20} />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-0 right-0 w-4 h-4 bg-red-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-slate-950">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+                <div className="w-9 h-9 rounded-full bg-slate-800 overflow-hidden ring-2 ring-red-900/50">
+                    <img src={user.avatar} alt="User" className="w-full h-full object-cover" />
+                </div>
             </div>
         </div>
 
@@ -376,14 +485,13 @@ const Dashboard: React.FC = () => {
 
         {/* Sidebar */}
         <aside className={`fixed lg:sticky top-0 left-0 h-screen w-80 bg-slate-950/95 backdrop-blur-xl border-r border-slate-900 z-50 transition-transform duration-300 lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} overflow-y-auto custom-scrollbar flex flex-col`}>
-            {/* Sidebar content remains same... */}
-            <div className="p-6 flex-1">
-                <div className="flex items-center justify-between mb-8">
+            <div className="p-6 pt-14 flex-1">
+                <div className="flex items-center justify-between mb-10">
                     <div className="flex items-center gap-2">
                          <img src="https://i.ibb.co/G4bmxpLm/5.png" alt="Logo" className="w-8 h-8 object-contain drop-shadow-[0_0_8px_rgba(220,38,38,0.5)]" />
                          <span className="font-bold text-xl tracking-tight">FXBROS<span className="text-red-600">.</span></span>
                     </div>
-                    <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden"><X size={24} className="text-slate-500"/></button>
+                    <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-2 hover:bg-slate-900 rounded-full transition-colors"><X size={24} className="text-slate-500"/></button>
                 </div>
 
                 <div className="mb-8">
@@ -437,6 +545,12 @@ const Dashboard: React.FC = () => {
                         <BarChart2 size={18} /> My Chart
                     </button>
                     <button 
+                         onClick={() => { setActiveTab('chat'); setSelectedVideo(null); setIsSidebarOpen(false); }}
+                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200 ${activeTab === 'chat' ? 'bg-gradient-to-r from-red-600 to-red-800 text-white shadow-lg shadow-red-900/20' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}
+                    >
+                        <MessageSquarePlus size={18} /> Grupo VIP
+                    </button>
+                    <button 
                          onClick={() => { setActiveTab('quiz'); setSelectedVideo(null); setIsSidebarOpen(false); }}
                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200 ${activeTab === 'quiz' ? 'bg-gradient-to-r from-red-600 to-red-800 text-white shadow-lg shadow-red-900/20' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}
                     >
@@ -462,15 +576,25 @@ const Dashboard: React.FC = () => {
                     </button>
                 </nav>
 
-                <div className="border-t border-slate-900 pt-6">
+                <div className="border-t border-slate-900 pt-6 mt-6">
                     <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 px-2">{dashboardContent.sections.modulesTitle}</h3>
                     <div className="space-y-2">
                         {filteredModules.map((module) => {
                             const moduleMeta = modulesMetadata.find(m => m.name === module.name);
-                            const isLocked = moduleMeta?.isLocked && user.role !== 'admin' && user.role !== 'super_admin';
+                            let isLocked = moduleMeta?.isLocked && user.role !== 'admin' && user.role !== 'super_admin';
+                            
+                            // Override: If user has explicit permission for this module
+                            if (user.allowedModules?.includes(module.name)) {
+                                isLocked = false;
+                            }
+                            
+                            // Admin override for DEV.QUANT module for Pro members
+                            if (isLocked && module.name === 'DEV.QUANT' && dashboardContent.devQuantForPro && user.planId === 'pro') {
+                                isLocked = false;
+                            }
 
                             return (
-                                <div key={module.name} className={`space-y-1 ${isLocked ? 'opacity-50' : ''}`}>
+                                <div key={`sidebar-mod-${module.name}`} className={`space-y-1 ${isLocked ? 'opacity-50' : ''}`}>
                                     <button 
                                         disabled={isLocked}
                                         onClick={() => toggleModule(module.name)}
@@ -928,7 +1052,7 @@ const Dashboard: React.FC = () => {
                             <div className="space-y-3 mb-6">
                                 {QUIZ_QUESTIONS[currentQuestionIdx].options.map((opt, idx) => (
                                     <button
-                                        key={idx}
+                                        key={`quiz-opt-${currentQuestionIdx}-${idx}`}
                                         onClick={() => handleOptionSelect(idx)}
                                         disabled={selectedOption !== null}
                                         className={`w-full text-left p-3 rounded-xl border transition-all text-sm ${
@@ -1061,6 +1185,17 @@ const Dashboard: React.FC = () => {
                 </div>
             )}
 
+            {/* VIP CHAT VIEW */}
+            {activeTab === 'chat' && (
+                <div className="p-4 lg:p-8 max-w-4xl mx-auto animate-fadeIn">
+                    <div className="mb-8">
+                        <h1 className="text-2xl font-bold text-white mb-2">Grupo VIP de Conversas</h1>
+                        <p className="text-slate-400 text-sm">Conecte-se com outros membros e compartilhe insights em tempo real.</p>
+                    </div>
+                    <VIPChat />
+                </div>
+            )}
+
             {/* ... (rest of content tabs) ... */}
             {(activeTab === 'modules' || activeTab === 'resources' || activeTab === 'favorites') && (
                  <div className="p-4 lg:p-6 max-w-6xl mx-auto animate-fadeIn">
@@ -1123,38 +1258,63 @@ const Dashboard: React.FC = () => {
                          <div className="grid md:grid-cols-2 gap-4">
                             {modules.map(mod => {
                                 const moduleMeta = modulesMetadata.find(m => m.name === mod.name);
-                                const isLocked = moduleMeta?.isLocked && user.role !== 'admin' && user.role !== 'super_admin';
+                                let isLocked = moduleMeta?.isLocked && user.role !== 'admin' && user.role !== 'super_admin';
+
+                                // Override: If user has explicit permission for this module
+                                if (user.allowedModules?.includes(mod.name)) {
+                                    isLocked = false;
+                                }
+
+                                // Admin override for DEV.QUANT module for Pro members
+                                if (isLocked && mod.name === 'DEV.QUANT' && dashboardContent.devQuantForPro && user.planId === 'pro') {
+                                    isLocked = false;
+                                }
 
                                 return (
-                                    <div key={mod.name} className={`bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition-colors ${isLocked ? 'opacity-60 grayscale' : ''}`}>
-                                        <div className="flex justify-between items-start mb-3">
-                                            <div className="w-10 h-10 bg-red-900/20 rounded-lg flex items-center justify-center text-red-500">
-                                                {isLocked ? <Lock size={20} /> : <Layers size={20} />}
-                                            </div>
-                                            <span className="text-[10px] font-bold bg-black px-2 py-1 rounded text-slate-400">{mod.count} Aulas</span>
+                                    <div key={`tab-mod-${mod.name}`} className={`bg-slate-900 border border-slate-800 rounded-xl overflow-hidden hover:border-slate-700 transition-colors ${isLocked ? 'opacity-60 grayscale' : ''}`}>
+                                        <div className="aspect-video relative overflow-hidden">
+                                            <img 
+                                                src={moduleMeta?.thumbnail || `https://picsum.photos/seed/${mod.name}/600/400`} 
+                                                alt={mod.name} 
+                                                className="w-full h-full object-cover"
+                                                referrerPolicy="no-referrer"
+                                            />
+                                            {isLocked && (
+                                                <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center">
+                                                    <Lock size={32} className="text-white/50" />
+                                                </div>
+                                            )}
                                         </div>
-                                        <h3 className="text-lg font-bold text-white mb-2">{mod.name}</h3>
-                                        
-                                        {isLocked ? (
-                                            <button disabled className="w-full py-2 mt-2 bg-slate-950 text-slate-500 rounded-lg text-xs font-bold border border-slate-800 cursor-not-allowed flex items-center justify-center gap-2">
-                                                <Lock size={12} /> Conteúdo Bloqueado
-                                            </button>
-                                        ) : (
-                                            <button onClick={() => toggleModule(mod.name)} className="w-full py-2 mt-2 bg-slate-950 hover:bg-black text-slate-300 hover:text-white rounded-lg text-xs font-bold transition-colors border border-slate-800">
-                                                {expandedModules.includes(mod.name) ? 'Ocultar Aulas' : 'Ver Conteúdo'}
-                                            </button>
-                                        )}
-                                        
-                                        {!isLocked && expandedModules.includes(mod.name) && (
-                                            <div className="mt-4 space-y-1">
-                                                {mod.videos.map(v => (
-                                                    <div key={v.id} onClick={() => handleVideoSelect(v)} className="flex items-center justify-between p-2 hover:bg-slate-800 rounded cursor-pointer group">
-                                                        <span className={`text-xs ${completedVideoIds.includes(v.id) ? 'text-slate-500 line-through' : 'text-slate-300 group-hover:text-white'}`}>{v.title}</span>
-                                                        {completedVideoIds.includes(v.id) && <CheckCircle2 size={12} className="text-green-500" />}
-                                                    </div>
-                                                ))}
+                                        <div className="p-5">
+                                            <div className="flex justify-between items-start mb-3">
+                                                <div className="w-10 h-10 bg-red-900/20 rounded-lg flex items-center justify-center text-red-500">
+                                                    {isLocked ? <Lock size={20} /> : <Layers size={20} />}
+                                                </div>
+                                                <span className="text-[10px] font-bold bg-black px-2 py-1 rounded text-slate-400">{mod.count} Aulas</span>
                                             </div>
-                                        )}
+                                            <h3 className="text-lg font-bold text-white mb-2">{mod.name}</h3>
+                                            
+                                            {isLocked ? (
+                                                <button disabled className="w-full py-2 mt-2 bg-slate-950 text-slate-500 rounded-lg text-xs font-bold border border-slate-800 cursor-not-allowed flex items-center justify-center gap-2">
+                                                    <Lock size={12} /> Conteúdo Bloqueado
+                                                </button>
+                                            ) : (
+                                                <button onClick={() => toggleModule(mod.name)} className="w-full py-2 mt-2 bg-slate-950 hover:bg-black text-slate-300 hover:text-white rounded-lg text-xs font-bold transition-colors border border-slate-800">
+                                                    {expandedModules.includes(mod.name) ? 'Ocultar Aulas' : 'Ver Conteúdo'}
+                                                </button>
+                                            )}
+                                            
+                                            {!isLocked && expandedModules.includes(mod.name) && (
+                                                <div className="mt-4 space-y-1">
+                                                    {mod.videos.map(v => (
+                                                        <div key={v.id} onClick={() => handleVideoSelect(v)} className="flex items-center justify-between p-2 hover:bg-slate-800 rounded cursor-pointer group">
+                                                            <span className={`text-xs ${completedVideoIds.includes(v.id) ? 'text-slate-500 line-through' : 'text-slate-300 group-hover:text-white'}`}>{v.title}</span>
+                                                            {completedVideoIds.includes(v.id) && <CheckCircle2 size={12} className="text-green-500" />}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 );
                             })}
@@ -1194,8 +1354,8 @@ const Dashboard: React.FC = () => {
                     </div>
 
                     {/* Continue Watching */}
-                    <div className="mb-8">
-                         <div className="flex items-center justify-between mb-4">
+                    <div className="mb-4">
+                         <div className="flex items-center justify-between mb-3">
                             <h2 className="text-lg font-bold text-white flex items-center gap-2"><PlayCircle className="text-red-500" size={20} /> {dashboardContent.sections.continueWatchingTitle}</h2>
                          </div>
                          
@@ -1235,17 +1395,51 @@ const Dashboard: React.FC = () => {
 
                     {/* All Modules - Netflix Style */}
                     <div>
-                        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2 px-2"><LayoutGrid className="text-red-600" size={20} /> {dashboardContent.sections.modulesTitle}</h2>
+                        <div className="flex items-center justify-between mb-4 px-2">
+                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                <LayoutGrid className="text-red-600" size={20} /> {dashboardContent.sections.modulesTitle}
+                            </h2>
+                            {(user?.role === 'admin' || user?.role === 'super_admin') && (
+                                <button 
+                                    onClick={() => setIsEditDashboardModalOpen(true)}
+                                    className="p-2 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg border border-slate-800 transition-all"
+                                    title="Editar Seção"
+                                >
+                                    <Edit2 size={16} />
+                                </button>
+                            )}
+                        </div>
                         
                         {/* Featured Hero Module (First Module) */}
                         {filteredModules.length > 0 && (() => {
                             const featuredModule = filteredModules[0];
                             const moduleMeta = modulesMetadata.find(m => m.name === featuredModule.name);
                             const thumb = moduleMeta?.thumbnail || `https://picsum.photos/seed/${featuredModule.name}/1200/600`;
-                            const isLocked = moduleMeta?.isLocked && user.role !== 'admin' && user.role !== 'super_admin';
+                            let isLocked = moduleMeta?.isLocked && user.role !== 'admin' && user.role !== 'super_admin';
+                            
+                            // Override: If user has explicit permission for this module
+                            if (user.allowedModules?.includes(featuredModule.name)) {
+                                isLocked = false;
+                            }
                             
                             return (
                                 <div className="relative w-full h-[40vh] min-h-[350px] mb-8 group overflow-hidden rounded-2xl mx-2 shadow-2xl ring-1 ring-slate-800">
+                                    {/* Admin Edit Button */}
+                                    {(user?.role === 'admin' || user?.role === 'super_admin') && (
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setEditingModule(moduleMeta || { id: featuredModule.name, name: featuredModule.name, description: '', thumbnail: '' });
+                                                setModuleThumbnailPreview(moduleMeta?.thumbnail || null);
+                                                setIsEditModuleModalOpen(true);
+                                            }}
+                                            className="absolute top-4 right-4 z-30 p-2 bg-black/50 hover:bg-black/80 text-white rounded-full backdrop-blur-sm transition-colors"
+                                            title="Editar Thumbnail"
+                                        >
+                                            <Edit2 size={16} />
+                                        </button>
+                                    )}
+
                                     <div className="absolute inset-0">
                                         <img src={thumb} alt={featuredModule.name} className={`w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105 ${isLocked ? 'grayscale opacity-30' : ''}`} />
                                         <div className="absolute inset-0 bg-gradient-to-r from-black via-black/60 to-transparent"></div>
@@ -1274,15 +1468,20 @@ const Dashboard: React.FC = () => {
                                             ) : (
                                                 <>
                                                     <button 
-                                                        onClick={() => toggleModule(featuredModule.name)}
+                                                        onClick={() => {
+                                                            const firstVideo = featuredModule.videos[0];
+                                                            if (firstVideo) handleVideoSelect(firstVideo);
+                                                        }}
                                                         className="px-6 py-2.5 bg-white text-black hover:bg-slate-200 font-bold rounded-lg flex items-center gap-2 transition-all transform hover:scale-105 text-sm"
                                                     >
                                                         <Play fill="black" size={16} /> Assistir Agora
                                                     </button>
                                                     <button 
                                                         onClick={() => {
-                                                            const firstVideo = featuredModule.videos[0];
-                                                            if(firstVideo) toggleVideoFavorite(firstVideo.id);
+                                                            setActiveTab('modules');
+                                                            if (!expandedModules.includes(featuredModule.name)) {
+                                                                toggleModule(featuredModule.name);
+                                                            }
                                                         }}
                                                         className="px-6 py-2.5 bg-slate-800/80 hover:bg-slate-700/80 backdrop-blur text-white font-bold rounded-lg flex items-center gap-2 transition-all border border-slate-700 text-sm"
                                                     >
@@ -1301,10 +1500,20 @@ const Dashboard: React.FC = () => {
                             {filteredModules.slice(1).map((module, i) => {
                                 const moduleMeta = modulesMetadata.find(m => m.name === module.name);
                                 const thumb = moduleMeta?.thumbnail || `https://picsum.photos/seed/${module.name}/400/250`;
-                                const isLocked = moduleMeta?.isLocked && user.role !== 'admin' && user.role !== 'super_admin';
+                                let isLocked = moduleMeta?.isLocked && user.role !== 'admin' && user.role !== 'super_admin';
+                                
+                                // Override: If user has explicit permission for this module
+                                if (user.allowedModules?.includes(module.name)) {
+                                    isLocked = false;
+                                }
+                                
+                                // Admin override for DEV.QUANT module for Pro members
+                                if (isLocked && module.name === 'DEV.QUANT' && dashboardContent.devQuantForPro && user.planId === 'pro') {
+                                    isLocked = false;
+                                }
                                 
                                 return (
-                                    <div key={module.name} className={`space-y-3 ${isLocked ? 'opacity-60 pointer-events-none grayscale' : ''}`}>
+                                    <div key={`row-mod-${module.name}`} className={`space-y-3 ${isLocked ? 'opacity-60 pointer-events-none grayscale' : ''}`}>
                                         <h3 className="text-lg font-bold text-slate-200 flex items-center gap-2 hover:text-white transition-colors cursor-pointer group/title">
                                             {module.name} 
                                             {isLocked ? <Lock size={16} className="text-slate-500" /> : <ChevronRight size={16} className="text-red-600 opacity-0 group-hover/title:opacity-100 transition-opacity -translate-x-2 group-hover/title:translate-x-0" />}
@@ -1314,9 +1523,26 @@ const Dashboard: React.FC = () => {
                                             <div className="flex gap-3 overflow-x-auto pb-4 pt-2 custom-scrollbar snap-x snap-mandatory scroll-pl-4">
                                                 {/* Module Info Card */}
                                                 <div 
+                                                    key={`module-info-${module.name}`}
                                                     onClick={() => !isLocked && toggleModule(module.name)}
                                                     className="min-w-[260px] md:min-w-[320px] h-[180px] relative rounded-lg overflow-hidden cursor-pointer flex-shrink-0 snap-start ring-1 ring-slate-800 hover:ring-red-600 transition-all transform hover:scale-105 hover:z-10 shadow-lg group/card"
                                                 >
+                                                    {/* Admin Edit Button */}
+                                                    {(user?.role === 'admin' || user?.role === 'super_admin') && (
+                                                        <button 
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setEditingModule(moduleMeta || { id: module.name, name: module.name, description: '', thumbnail: '' });
+                                                                setModuleThumbnailPreview(moduleMeta?.thumbnail || null);
+                                                                setIsEditModuleModalOpen(true);
+                                                            }}
+                                                            className="absolute top-2 right-2 z-30 p-1.5 bg-black/50 hover:bg-black/80 text-white rounded-full backdrop-blur-sm transition-colors opacity-0 group-hover/card:opacity-100"
+                                                            title="Editar Thumbnail"
+                                                        >
+                                                            <Edit2 size={14} />
+                                                        </button>
+                                                    )}
+
                                                     <img src={thumb} alt={module.name} className="w-full h-full object-cover opacity-60 group-hover/card:opacity-40 transition-opacity" />
                                                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
                                                     
@@ -1386,6 +1612,143 @@ const Dashboard: React.FC = () => {
             )}
         </main>
 
+        {/* MODALS */}
+        
+        {/* Edit Dashboard CMS Modal */}
+        {isEditDashboardModalOpen && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-slate-950 border border-slate-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl"
+                >
+                    <div className="p-6 border-b border-slate-900 flex items-center justify-between">
+                        <h2 className="text-xl font-bold text-white">Editar Dashboard</h2>
+                        <button onClick={() => setIsEditDashboardModalOpen(false)} className="text-slate-500 hover:text-white"><X size={20}/></button>
+                    </div>
+                    
+                    <form onSubmit={handleSaveDashboardCMS} className="p-6 space-y-4">
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Título do Banner</label>
+                            <input 
+                                type="text" 
+                                value={editDashboardContent.banner.titlePrefix}
+                                onChange={(e) => setEditDashboardContent({...editDashboardContent, banner: {...editDashboardContent.banner, titlePrefix: e.target.value}})}
+                                className="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:border-red-600 focus:outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Subtítulo do Banner</label>
+                            <textarea 
+                                value={editDashboardContent.banner.subtitle}
+                                onChange={(e) => setEditDashboardContent({...editDashboardContent, banner: {...editDashboardContent.banner, subtitle: e.target.value}})}
+                                className="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:border-red-600 focus:outline-none"
+                                rows={2}
+                            />
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Título da Seção de Módulos</label>
+                            <input 
+                                type="text" 
+                                value={editDashboardContent.sections.modulesTitle}
+                                onChange={(e) => setEditDashboardContent({...editDashboardContent, sections: {...editDashboardContent.sections, modulesTitle: e.target.value}})}
+                                className="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:border-red-600 focus:outline-none"
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-3 p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+                            <div className="w-10 h-10 bg-amber-900/20 rounded-lg flex items-center justify-center text-amber-500">
+                                <Bot size={20} />
+                            </div>
+                            <div className="flex-1">
+                                <h4 className="text-sm font-bold text-white">Desbloquear DEV.QUANT</h4>
+                                <p className="text-[10px] text-slate-500">Permitir acesso ao Modo Quant para membros Pro.</p>
+                            </div>
+                            <button 
+                                type="button"
+                                onClick={() => setEditDashboardContent({...editDashboardContent, devQuantForPro: !editDashboardContent.devQuantForPro})}
+                                className={`w-12 h-6 rounded-full transition-colors relative ${editDashboardContent.devQuantForPro ? 'bg-red-600' : 'bg-slate-800'}`}
+                            >
+                                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${editDashboardContent.devQuantForPro ? 'right-1' : 'left-1'}`}></div>
+                            </button>
+                        </div>
+                        
+                        <div className="pt-4 flex gap-3">
+                            <button 
+                                type="button"
+                                onClick={() => setIsEditDashboardModalOpen(false)}
+                                className="flex-1 px-4 py-3 bg-slate-900 text-slate-400 font-bold rounded-xl hover:bg-slate-800 transition-colors text-sm"
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                type="submit"
+                                disabled={isSavingDashboard}
+                                className="flex-1 px-4 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-all shadow-lg shadow-red-900/20 disabled:opacity-50 text-sm flex items-center justify-center gap-2"
+                            >
+                                {isSavingDashboard ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                                Salvar
+                            </button>
+                        </div>
+                    </form>
+                </motion.div>
+            </div>
+        )}
+
+        {/* Notifications Panel */}
+        {isNotificationsOpen && (
+          <div className="fixed inset-0 z-[110] lg:absolute lg:inset-auto lg:top-16 lg:right-6 lg:w-80 lg:h-auto lg:max-h-[500px] flex flex-col bg-slate-950 border border-slate-800 lg:rounded-2xl shadow-2xl overflow-hidden animate-fadeIn">
+            <div className="p-4 border-b border-slate-900 flex items-center justify-between bg-slate-900/50">
+              <h3 className="font-bold text-white flex items-center gap-2">
+                <Bell size={16} className="text-red-500" /> Notificações
+              </h3>
+              <button onClick={() => setIsNotificationsOpen(false)} className="text-slate-500 hover:text-white"><X size={20}/></button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar max-h-[400px]">
+              {!user.notifications || user.notifications.length === 0 ? (
+                <div className="py-12 text-center">
+                  <BellOff size={32} className="mx-auto text-slate-800 mb-2" />
+                  <p className="text-slate-600 text-xs">Nenhuma notificação</p>
+                </div>
+              ) : (
+                user.notifications.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(notif => (
+                  <div 
+                    key={notif.id} 
+                    className={`p-3 rounded-xl border transition-all ${notif.read ? 'bg-slate-900/20 border-slate-900 opacity-60' : 'bg-slate-900 border-slate-800 hover:border-slate-700'}`}
+                    onClick={() => !notif.read && handleMarkAsRead(notif.id)}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <h4 className={`text-xs font-bold ${notif.read ? 'text-slate-400' : 'text-white'}`}>{notif.title}</h4>
+                      {!notif.read && <div className="w-2 h-2 rounded-full bg-red-600 flex-shrink-0 mt-1"></div>}
+                    </div>
+                    <p className="text-[10px] text-slate-500 leading-relaxed mb-2">{notif.message}</p>
+                    <div className="flex items-center justify-between text-[8px] text-slate-600 uppercase font-bold tracking-widest">
+                      <span>{notif.type}</span>
+                      <span>{new Date(notif.date).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            
+            {user.role === 'admin' || user.role === 'super_admin' ? (
+              <div className="p-3 bg-slate-900/50 border-t border-slate-900">
+                <button 
+                  onClick={() => {
+                    const title = window.prompt("Título do Anúncio:");
+                    const msg = window.prompt("Mensagem:");
+                    if (title && msg) sendGlobalAnnouncement(title, msg);
+                  }}
+                  className="w-full py-2 bg-red-600/10 hover:bg-red-600/20 text-red-500 text-[10px] font-bold rounded-lg border border-red-900/30 transition-all uppercase tracking-widest"
+                >
+                  Enviar Anúncio Global
+                </button>
+              </div>
+            ) : null}
+          </div>
+        )}
+
         {/* REVIEW MODAL */}
         {isReviewModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
@@ -1427,6 +1790,104 @@ const Dashboard: React.FC = () => {
               </form>
             </div>
           </div>
+        )}
+
+        {/* EDIT MODULE MODAL */}
+        {isEditModuleModalOpen && editingModule && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+                <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsEditModuleModalOpen(false)}></div>
+                <div className="relative bg-slate-950 border border-slate-800 p-8 rounded-2xl w-full max-w-md shadow-2xl animate-[slideIn_0.3s_ease-out]">
+                    <button onClick={() => setIsEditModuleModalOpen(false)} className="absolute top-4 right-4 text-slate-500 hover:text-white"><X size={24} /></button>
+                    
+                    <h3 className="text-2xl font-bold text-white mb-6">Editar Módulo</h3>
+                    
+                    <form onSubmit={handleSaveModule} className="space-y-6">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Nome do Módulo</label>
+                            <input 
+                                type="text" 
+                                value={editingModule.name}
+                                disabled
+                                className="w-full bg-slate-900 border border-slate-800 rounded-lg p-3 text-slate-400 cursor-not-allowed"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Descrição</label>
+                            <textarea 
+                                rows={3}
+                                value={editingModule.description}
+                                onChange={(e) => setEditingModule({...editingModule, description: e.target.value})}
+                                className="w-full bg-black border border-slate-800 rounded-lg p-3 text-white focus:border-red-600 focus:outline-none"
+                                placeholder="Descrição do módulo..."
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Thumbnail (Capa)</label>
+                            <div className="flex items-center gap-4">
+                                <div className="w-24 h-16 bg-slate-900 rounded-lg overflow-hidden border border-slate-800 flex-shrink-0">
+                                    {moduleThumbnailPreview ? (
+                                        <img src={moduleThumbnailPreview} alt="Preview" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-slate-600">
+                                            <Camera size={20} />
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex-1">
+                                    <input 
+                                        type="file" 
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                setModuleThumbnailFile(file);
+                                                const reader = new FileReader();
+                                                reader.onloadend = () => {
+                                                    setModuleThumbnailPreview(reader.result as string);
+                                                };
+                                                reader.readAsDataURL(file);
+                                            }
+                                        }}
+                                        className="hidden"
+                                        id="module-thumb-upload"
+                                    />
+                                    <label 
+                                        htmlFor="module-thumb-upload"
+                                        className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg cursor-pointer text-xs font-bold transition-colors border border-slate-700"
+                                    >
+                                        <Upload size={14} /> Escolher Imagem
+                                    </label>
+                                    <p className="text-[10px] text-slate-500 mt-2">Recomendado: 1200x600px (JPG/PNG)</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <input 
+                                type="checkbox" 
+                                id="isLocked"
+                                checked={editingModule.isLocked || false}
+                                onChange={(e) => setEditingModule({...editingModule, isLocked: e.target.checked})}
+                                className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-red-600 focus:ring-red-600"
+                            />
+                            <label htmlFor="isLocked" className="text-sm text-slate-300 cursor-pointer select-none">
+                                Bloquear Módulo (Apenas Admin)
+                            </label>
+                        </div>
+
+                        <button 
+                            type="submit" 
+                            disabled={isSavingModule}
+                            className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
+                        >
+                            {isSavingModule ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                            Salvar Alterações
+                        </button>
+                    </form>
+                </div>
+            </div>
         )}
 
     </div>

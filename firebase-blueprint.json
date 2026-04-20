@@ -1,0 +1,106 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and role information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Firebase Auth UID" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["member", "admin", "super_admin"] },
+        "status": { "type": "string", "enum": ["pending", "active", "blocked"] },
+        "joinDate": { "type": "string", "format": "date-time" },
+        "notifications": { "type": "array", "items": { "type": "object" } }
+      },
+      "required": ["id", "name", "email", "role"]
+    },
+    "ModuleMetadata": {
+      "title": "Module Metadata",
+      "description": "Metadata for training modules",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "thumbnail": { "type": "string" },
+        "order": { "type": "number" },
+        "isLocked": { "type": "boolean" },
+        "isHighlight": { "type": "boolean" }
+      },
+      "required": ["id", "title"]
+    },
+    "VideoLesson": {
+      "title": "Video Lesson",
+      "description": "Lesson content and video URL",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "url": { "type": "string" },
+        "thumbnail": { "type": "string" },
+        "module": { "type": "string" },
+        "duration": { "type": "string" },
+        "order": { "type": "number" }
+      },
+      "required": ["id", "title", "url", "module"]
+    },
+    "ModuleResource": {
+      "title": "Module Resource",
+      "description": "Downloadable resources for modules",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "module": { "type": "string" },
+        "type": { "type": "string" },
+        "url": { "type": "string" },
+        "dateAdded": { "type": "string", "format": "date-time" },
+        "notes": { "type": "string" },
+        "aiSummary": { "type": "string" }
+      },
+      "required": ["id", "title", "url", "module"]
+    },
+    "ChartComment": {
+      "title": "Chart Comment",
+      "description": "User comments on charts",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userAvatar": { "type": "string" },
+        "content": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "imageUrl": { "type": "string" }
+      },
+      "required": ["id", "userId", "content"]
+    },
+    "ChatMessage": {
+      "title": "Chat Message",
+      "description": "Messages in the VIP community chat",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userAvatar": { "type": "string" },
+        "userRole": { "type": "string" },
+        "content": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["text", "system"] }
+      },
+      "required": ["id", "userId", "content", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": { "schema": "User", "description": "User profiles" },
+    "/modules/{moduleId}": { "schema": "ModuleMetadata", "description": "Training modules" },
+    "/videos/{videoId}": { "schema": "VideoLesson", "description": "Video lessons" },
+    "/resources/{resourceId}": { "schema": "ModuleResource", "description": "Module resources" },
+    "/chart_comments/{commentId}": { "schema": "ChartComment", "description": "Chart community comments" },
+    "/chat_messages/{messageId}": { "schema": "ChatMessage", "description": "VIP community chat messages" },
+    "/sos_chat/{messageId}": { "schema": "ChatMessage", "description": "School of Skills course chat" }
+  }
+}

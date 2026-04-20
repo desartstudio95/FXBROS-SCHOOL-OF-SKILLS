@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, TrendingUp, Star, MessageSquarePlus, X, Instagram, Brain, MessageCircle, Server, Activity, ShieldAlert } from 'lucide-react';
+import { ArrowRight, CheckCircle2, TrendingUp, Star, MessageSquarePlus, X, Instagram, Brain, MessageCircle, Server, Activity, ShieldAlert, Edit3 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 const Home: React.FC = () => {
   const { homeContent, user, testimonials, addTestimonial } = useApp();
   const navigate = useNavigate();
+  const isAdmin = user && (user.role === 'admin' || user.role === 'super_admin');
   
   // Feedback Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -82,13 +83,23 @@ const Home: React.FC = () => {
 
   return (
     <div className="bg-black min-h-screen">
+      {isAdmin && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <button 
+            onClick={() => navigate('/admin-portal', { state: { targetSection: 'cms' } })}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full font-bold shadow-lg shadow-red-900/40 transition-all border border-red-500/20"
+          >
+            <Edit3 size={18} /> Editar Página
+          </button>
+        </div>
+      )}
       
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img 
             src={homeContent.hero.bgImage} 
-            alt="Forex Market Background" 
+            alt="Laptop com gráficos de trading de Forex" 
             className="w-full h-full object-cover object-center opacity-40"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/30"></div>
@@ -99,14 +110,14 @@ const Home: React.FC = () => {
             <span className="text-red-400 text-xs font-bold tracking-widest uppercase">{homeContent.hero.badge}</span>
           </div>
           
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight mb-6 leading-tight">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight mb-6 leading-tight">
             {homeContent.hero.titleLine1} <br />
             <span className="text-red-600">
               {homeContent.hero.titleHighlight}
             </span>
           </h1>
           
-          <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed uppercase">
             {homeContent.hero.description}
           </p>
           
@@ -151,26 +162,11 @@ const Home: React.FC = () => {
                  </span>
              )}
           </div>
-          
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl mx-auto">
-              {[
-                  { label: "Membros Ativos", value: "100+" },
-                  { label: "Capital Ganho", value: "1M+ MT" },
-                  { label: "Taxa de Sucesso", value: "92%" },
-                  { label: "Análise de Mercado", value: "24/7" }
-              ].map((stat, i) => (
-                  <div key={i} className="p-4 rounded-xl bg-slate-900/50 border border-slate-800">
-                      <div className="text-2xl font-bold text-white">{stat.value}</div>
-                      <div className="text-slate-500 text-xs uppercase font-bold">{stat.label}</div>
-                  </div>
-              ))}
-          </div>
         </div>
       </section>
 
       {/* About Section */}
-      <section className="py-24 bg-black border-t border-slate-900">
+      <section className="py-16 bg-black border-t border-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="relative">
@@ -199,40 +195,36 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Founder Section */}
-      <section className="py-24 bg-slate-950 border-y border-slate-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-                <div className="order-2 lg:order-1">
-                    <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">A Mente por Trás do Método</h2>
-                    <div className="prose prose-invert mb-8">
-                        <p className="text-slate-300 leading-relaxed whitespace-pre-line">
-                            {homeContent.founder.description}
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <div>
-                            <div className="text-white font-bold text-lg">{homeContent.founder.name}</div>
-                            <div className="text-red-500 text-sm font-bold uppercase">{homeContent.founder.role}</div>
-                        </div>
-                        <a href="https://www.instagram.com/its_forever_in_profit/" target="_blank" rel="noreferrer" className="ml-auto flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
-                            <Instagram size={20} /> Instagram
-                        </a>
-                    </div>
+      {/* Journey Section */}
+      <section className="py-16 bg-slate-950 border-y border-slate-900 relative overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-red-500/50 to-transparent"></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-black text-white mb-6">Uma jornada completa para o seu sucesso</h2>
+            <p className="text-slate-400 max-w-2xl mx-auto">Desenvolvemos um ecossistema focado em transformar iniciantes em traders de elite através de um caminho estruturado e profissional.</p>
+          </div>
+
+          <div className="grid md:grid-cols-4 gap-8">
+            {[
+              { icon: <Brain className="text-red-500" />, title: "Mentalidade", desc: "Blindagem emocional e disciplina inegociável." },
+              { icon: <TrendingUp className="text-red-500" />, title: "Estratégia", desc: "Metodologia institucional baseada em dados reais." },
+              { icon: <Activity className="text-red-500" />, title: "Execução", desc: "Ferramentas de precisão para entradas perfeitas." },
+              { icon: <Star className="text-red-500" />, title: "Consistência", desc: "O resultado final de um processo bem executado." }
+            ].map((step, i) => (
+              <div key={i} className="p-8 rounded-2xl bg-black border border-slate-800 hover:border-red-500/30 transition-all group">
+                <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  {step.icon}
                 </div>
-                <div className="order-1 lg:order-2">
-                    <img 
-                        src={homeContent.founder.imageUrl} 
-                        alt="Founder" 
-                        className="rounded-2xl shadow-2xl border border-slate-800 w-full aspect-[4/5] object-cover"
-                    />
-                </div>
-            </div>
+                <h4 className="text-xl font-bold text-white mb-3">{step.title}</h4>
+                <p className="text-slate-400 text-sm leading-relaxed">{step.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Testimonials */}
-      <section className="py-24 bg-black">
+      <section className="py-16 bg-black">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-end mb-12">
             <div>
@@ -327,7 +319,7 @@ const Home: React.FC = () => {
         )}
 
       {/* Footer CTA */}
-      <section className="py-24 bg-gradient-to-b from-black to-red-950/20 border-t border-slate-900 text-center">
+      <section className="py-16 bg-gradient-to-b from-black to-red-950/20 border-t border-slate-900 text-center">
         <div className="max-w-4xl mx-auto px-4">
           <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">Pronto para começar?</h2>
           <p className="text-lg text-slate-300 mb-10">Junte-se à academia hoje e tenha acesso instantâneo.</p>

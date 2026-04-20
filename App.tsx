@@ -10,13 +10,17 @@ import Admin from './pages/Admin';
 import AdminSetup from './pages/AdminSetup';
 import Plans from './pages/Plans';
 import Methodology from './pages/Methodology';
+import Robots from './pages/Robots';
+import About from './pages/About';
 import Welcome from './pages/Welcome';
+import SchoolOfSkills from './pages/SchoolOfSkills';
 import { Terms, Privacy, Risk } from './pages/Legal';
 import { Loader2 } from 'lucide-react';
+import { Toaster } from 'sonner';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
-  const isDashboard = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/admin') || location.pathname.startsWith('/welcome') || location.pathname === '/admin-portal';
+  const isDashboard = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/admin') || location.pathname.startsWith('/welcome') || location.pathname.startsWith('/school-of-skills') || location.pathname === '/admin-portal';
   
   // Scroll to top on route change
   useEffect(() => {
@@ -25,7 +29,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   return (
     <>
-      {!location.pathname.startsWith('/welcome') && location.pathname !== '/admin-portal' && <Navbar />}
+      {!location.pathname.startsWith('/welcome') && !location.pathname.startsWith('/school-of-skills') && location.pathname !== '/admin-portal' && <Navbar />}
       {children}
       {!isDashboard && <Footer />}
     </>
@@ -75,8 +79,11 @@ const AppContent: React.FC = () => {
           <Route path="/" element={<Home />} />
           <Route path="/plans" element={<Plans />} />
           <Route path="/methodology" element={<Methodology />} />
+          <Route path="/robots" element={<Robots />} />
+          <Route path="/about" element={<About />} />
           <Route path="/login" element={<Login />} />
           <Route path="/welcome" element={<Welcome />} />
+          <Route path="/school-of-skills" element={<SchoolOfSkills />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin-portal" element={<AdminSetup />} />
@@ -92,6 +99,7 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <AppProvider>
+      <Toaster position="top-right" theme="dark" richColors />
       <AppContent />
     </AppProvider>
   );
