@@ -200,6 +200,11 @@ export interface RobotsPageContent {
   };
 }
 
+export interface GlobalSettings {
+  isMaintenanceMode: boolean;
+  maintenanceMessage?: string;
+}
+
 export interface ThemeSettings {
   fontFamily: 'Inter' | 'Montserrat' | 'Roboto Mono' | 'Playfair Display';
   baseFontSize: '14px' | '16px' | '18px';

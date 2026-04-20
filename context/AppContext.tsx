@@ -26,7 +26,7 @@ import {
   getDownloadURL
 } from 'firebase/storage';
 import { auth, db, storage } from '../firebaseConfig';
-import type { User, VideoLesson, PricingPlan, HomeContent, ThemeSettings, Testimonial, ModuleResource, PlansPageContent, ModuleMetadata, WelcomeContent, DashboardContent, AppNotification, AboutPageContent, RobotsPageContent, RobotDefinition } from '../types';
+import type { User, VideoLesson, PricingPlan, HomeContent, ThemeSettings, Testimonial, ModuleResource, PlansPageContent, ModuleMetadata, WelcomeContent, DashboardContent, AppNotification, AboutPageContent, RobotsPageContent, RobotDefinition, GlobalSettings } from '../types';
 
 import { toast } from 'sonner';
 
@@ -83,6 +83,9 @@ interface AppContextType {
   updateAboutPageContent: (content: AboutPageContent) => Promise<void>;
   robotsPageContent: RobotsPageContent;
   updateRobotsPageContent: (content: RobotsPageContent) => Promise<void>;
+  
+  globalSettings: GlobalSettings;
+  updateGlobalSettings: (settings: GlobalSettings) => Promise<void>;
   
   themeSettings: ThemeSettings;
   updateThemeSettings: (settings: ThemeSettings) => void;
@@ -196,6 +199,11 @@ const defaultRobotsPageContent: RobotsPageContent = {
   catalog: { title: 'Escolha sua Arma', subtitle: 'Sistemas desenvolvidos para diferentes perfis de risco e objetivos financeiros.' }
 };
 
+const defaultGlobalSettings: GlobalSettings = {
+  isMaintenanceMode: false,
+  maintenanceMessage: 'Estamos em manutenção para melhorar sua experiência. Voltamos em breve!'
+};
+
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 // Helper to convert File to Base64 for local storage persistence
@@ -255,6 +263,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [robots, setRobots] = usePersistedState<RobotDefinition[]>('fxbros_robots', defaultRobots);
   const [robotsPageContent, setRobotsPageContent] = usePersistedState<RobotsPageContent>('fxbros_robots_page', defaultRobotsPageContent);
   const [themeSettings, setThemeSettings] = usePersistedState<ThemeSettings>('fxbros_theme', defaultThemeSettings);
+  const [globalSettings, setGlobalSettings] = useState<GlobalSettings>(defaultGlobalSettings);
 
   // User Progress
   const [completedVideoIds, setCompletedVideoIds] = useState<string[]>([]);
@@ -334,6 +343,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           console.warn("Error fetching resources");
       }
   }, []);
+
+  const fetchGlobalSettings = useCallback(async () => {
+      try {
+          const docSnap = await getDoc(doc(db, "settings", "global"));
+          if (docSnap.exists()) {
+              setGlobalSettings(docSnap.data() as GlobalSettings);
+          } else {
+              // Seed default
+              await setDoc(doc(db, "settings", "global"), defaultGlobalSettings);
+              setGlobalSettings(defaultGlobalSettings);
+          }
+      } catch (error) {
+          console.error("Error fetching global settings:", error);
+      }
+  }, []);
+
+  useEffect(() => {
+    fetchGlobalSettings();
+  }, [fetchGlobalSettings]);
 
   useEffect(() => {
       if (user) {
@@ -677,6 +705,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const updateAboutPageContent = async (content: AboutPageContent) => setAboutPageContent(content);
   const updateRobotsPageContent = async (content: RobotsPageContent) => setRobotsPageContent(content);
 
+  const updateGlobalSettings = async (settings: GlobalSettings) => {
+    try {
+      await setDoc(doc(db, "settings", "global"), settings);
+      setGlobalSettings(settings);
+      toast.success("Configurações do sistema atualizadas!");
+    } catch (e) {
+      console.error("Erro ao atualizar configurações globais:", e);
+      toast.error("Erro ao salvar configurações.");
+    }
+  };
+
   const addRobot = async (robot: RobotDefinition) => {
     setRobots([...robots, robot]);
     toast.success("Robô adicionado com sucesso");
@@ -919,6 +958,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       updateAboutPageContent,
       robotsPageContent,
       updateRobotsPageContent,
+      globalSettings,
+      updateGlobalSettings,
       robots,
       addRobot,
       updateRobot,

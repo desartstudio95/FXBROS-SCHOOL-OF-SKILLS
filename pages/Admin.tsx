@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { Navigate, useLocation } from 'react-router-dom';
-import { UploadCloud, Link as LinkIcon, Plus, Video, Trash2, Check, Edit3, X, CreditCard, LayoutList, Star, Globe, Save, ShieldCheck, Palette, Type, Users, UserCheck, UserX, AlertCircle, Layers, CheckCircle2, FileText, Download, Loader2, Megaphone, Send, User, AlignLeft, Image as ImageIcon, Box, Film, Clock, LayoutGrid, Sparkles, FileType, MessageSquare, Play, Calendar, Eye, Lock, Unlock, Bot } from 'lucide-react';
+import { UploadCloud, Link as LinkIcon, Plus, Video, Trash2, Check, Edit3, X, CreditCard, LayoutList, Star, Globe, Save, ShieldCheck, Palette, Type, Users, UserCheck, UserX, AlertCircle, Layers, CheckCircle2, FileText, Download, Loader2, Megaphone, Send, User, AlignLeft, Image as ImageIcon, Box, Film, Clock, LayoutGrid, Sparkles, FileType, MessageSquare, Play, Calendar, Eye, Lock, Unlock, Bot, Settings, Hammer, ShieldAlert } from 'lucide-react';
 import { VideoLesson, PricingPlan, HomeContent, User as UserType, ModuleResource, PlansPageContent, ModuleMetadata, WelcomeContent, DashboardContent, AboutPageContent, RobotsPageContent, RobotDefinition } from '../types';
 import { doc, collection } from "firebase/firestore";
 import { db } from "../firebaseConfig";
@@ -56,12 +56,12 @@ const generateVideoThumbnail = (file: File): Promise<Blob | null> => {
 };
 
 const Admin: React.FC = () => {
-  const { user, videos, addVideo, deleteVideo, updateVideo, uploadVideo, uploadImage, resources, uploadResource, deleteResource, plans, addPlan, deletePlan, updatePlan, homeContent, updateHomeContent, themeSettings, updateThemeSettings, allUsers, updateUserStatus, updateUserModules, updateUserPlan, deleteUser, sendGlobalAnnouncement, plansPageContent, updatePlansPageContent, updateModuleMetadata, deleteModuleMetadata, modulesMetadata, welcomeContent, updateWelcomeContent, dashboardContent, updateDashboardContent, testimonials, deleteTestimonial, aboutPageContent, updateAboutPageContent, robotsPageContent, updateRobotsPageContent, robots, addRobot, updateRobot, deleteRobot } = useApp();
+  const { user, videos, addVideo, deleteVideo, updateVideo, uploadVideo, uploadImage, resources, uploadResource, deleteResource, plans, addPlan, deletePlan, updatePlan, homeContent, updateHomeContent, themeSettings, updateThemeSettings, allUsers, updateUserStatus, updateUserModules, updateUserPlan, deleteUser, sendGlobalAnnouncement, plansPageContent, updatePlansPageContent, updateModuleMetadata, deleteModuleMetadata, modulesMetadata, welcomeContent, updateWelcomeContent, dashboardContent, updateDashboardContent, testimonials, deleteTestimonial, aboutPageContent, updateAboutPageContent, robotsPageContent, updateRobotsPageContent, robots, addRobot, updateRobot, deleteRobot, globalSettings, updateGlobalSettings } = useApp();
   const location = useLocation();
   
   const initialSection = user?.role === 'super_admin' ? 'cms' : 'members';
 
-  const [activeSection, setActiveSection] = useState<'videos' | 'plans' | 'cms' | 'appearance' | 'members' | 'announcements' | 'reviews' | 'robots'>(initialSection);
+  const [activeSection, setActiveSection] = useState<'videos' | 'plans' | 'cms' | 'appearance' | 'members' | 'announcements' | 'reviews' | 'robots' | 'system'>(initialSection);
   const [activeContentTab, setActiveContentTab] = useState<'videos' | 'resources' | 'modules'>('modules');
   const [activePlanTab, setActivePlanTab] = useState<'cards' | 'page_settings'>('cards');
   const [activeCmsTab, setActiveCmsTab] = useState<'home' | 'plans' | 'welcome' | 'dashboard' | 'about' | 'robots_page'>('home');
@@ -680,6 +680,9 @@ const Admin: React.FC = () => {
           </button>
           <button onClick={() => setActiveSection('appearance')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeSection === 'appearance' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}>
             <Palette size={18} /> Aparência
+          </button>
+          <button onClick={() => setActiveSection('system')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeSection === 'system' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}>
+            <Settings size={18} /> Sistema
           </button>
         </nav>
       </aside>
@@ -1421,6 +1424,62 @@ const Admin: React.FC = () => {
                                 )}
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* SYSTEM SECTION */}
+        {activeSection === 'system' && (
+            <div className="max-w-2xl mx-auto space-y-8">
+                <h2 className="text-2xl font-bold border-b border-slate-800 pb-4 flex items-center gap-2">
+                    <Settings className="text-red-600" /> Configurações do Sistema
+                </h2>
+                
+                <div className="bg-slate-900 p-8 rounded-2xl border border-slate-800 space-y-8">
+                    <div className="flex items-center justify-between gap-4 p-6 bg-black rounded-xl border border-slate-800">
+                        <div className="space-y-1">
+                            <h3 className="font-bold text-white flex items-center gap-2">
+                                <Hammer size={18} className="text-red-500" /> Modo de Manutenção
+                            </h3>
+                            <p className="text-xs text-slate-500">
+                                Ative para bloquear o acesso de usuários comuns à plataforma.
+                            </p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                checked={globalSettings.isMaintenanceMode}
+                                onChange={(e) => updateGlobalSettings({ ...globalSettings, isMaintenanceMode: e.target.checked })}
+                                className="sr-only peer" 
+                            />
+                            <div className="w-14 h-7 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-red-600"></div>
+                        </label>
+                    </div>
+
+                    {globalSettings.isMaintenanceMode && (
+                        <div className="space-y-4 animate-fadeIn">
+                            <label className="block text-sm font-bold text-slate-400">Mensagem de Manutenção</label>
+                            <textarea 
+                                value={globalSettings.maintenanceMessage}
+                                onChange={(e) => updateGlobalSettings({ ...globalSettings, maintenanceMessage: e.target.value })}
+                                rows={4}
+                                className="w-full bg-black border border-slate-800 rounded-lg p-4 text-white focus:border-red-600 outline-none resize-none"
+                                placeholder="Digite a mensagem que os usuários verão na página de manutenção..."
+                            />
+                            <p className="text-[10px] text-slate-600">
+                                * As alterações nesta mensagem são salvas automaticamente após cada edição.
+                            </p>
+                        </div>
+                    )}
+
+                    <div className="pt-6 border-t border-slate-800">
+                        <div className="bg-red-950/20 border border-red-900/30 p-4 rounded-lg flex gap-3 text-red-400 text-sm">
+                            <ShieldAlert size={20} className="shrink-0" />
+                            <p>
+                                <strong>Aviso:</strong> Quando ativo, apenas administradores autenticados podem navegar pela plataforma. Usuários comuns serão redirecionados para a tela de manutenção.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>

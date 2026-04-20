@@ -14,12 +14,19 @@ import Robots from './pages/Robots';
 import About from './pages/About';
 import Welcome from './pages/Welcome';
 import SchoolOfSkills from './pages/SchoolOfSkills';
+import Maintenance from './pages/Maintenance';
 import { Terms, Privacy, Risk } from './pages/Legal';
 import { Loader2 } from 'lucide-react';
 import { Toaster } from 'sonner';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
+  const { globalSettings, user } = useApp();
+  
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const isMaintenance = globalSettings.isMaintenanceMode && !isAdmin;
+  const isExcludedPath = location.pathname === '/login' || location.pathname === '/admin-portal' || (location.pathname === '/admin' && isAdmin);
+
   const isDashboard = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/admin') || location.pathname.startsWith('/welcome') || location.pathname.startsWith('/school-of-skills') || location.pathname === '/admin-portal';
   
   // Scroll to top on route change
@@ -27,11 +34,15 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
+  if (isMaintenance && !isExcludedPath) {
+    return <Maintenance />;
+  }
+
   return (
     <>
-      {!location.pathname.startsWith('/welcome') && !location.pathname.startsWith('/school-of-skills') && location.pathname !== '/admin-portal' && <Navbar />}
+      {!location.pathname.startsWith('/welcome') && !location.pathname.startsWith('/school-of-skills') && location.pathname !== '/admin-portal' && !isMaintenance && <Navbar />}
       {children}
-      {!isDashboard && <Footer />}
+      {!isDashboard && !isMaintenance && <Footer />}
     </>
   );
 };
