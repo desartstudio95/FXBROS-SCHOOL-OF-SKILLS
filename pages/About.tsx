@@ -11,18 +11,13 @@ import {
   Heart,
   Zap,
   ArrowRight,
-  Instagram,
-  Edit3
+  Instagram
 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 
 const About: React.FC = () => {
-  const { aboutPageContent, homeContent, user } = useApp();
-  const navigate = useNavigate();
-
-  const isAdmin = user && (user.role === 'admin' || user.role === 'super_admin');
-
+  const { homeContent } = useApp();
   const values = [
     {
       icon: <ShieldCheck className="w-8 h-8 text-red-500" />,
@@ -50,19 +45,8 @@ const About: React.FC = () => {
 
   return (
     <div className="bg-black min-h-screen text-white">
-      {isAdmin && (
-        <div className="fixed bottom-6 right-6 z-50">
-          <button 
-            onClick={() => navigate('/admin-portal', { state: { targetSection: 'cms' } })}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full font-bold shadow-lg shadow-red-900/40 transition-all border border-red-500/20"
-          >
-            <Edit3 size={18} /> Editar Página
-          </button>
-        </div>
-      )}
-
       {/* Hero Section */}
-      <section className="relative pt-20 pb-12 px-4 overflow-hidden">
+      <section className="relative pt-32 pb-20 px-4 overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-6xl h-[400px] bg-red-600/5 blur-[100px] rounded-full -z-10"></div>
         
         <div className="max-w-7xl mx-auto text-center">
@@ -79,9 +63,10 @@ const About: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-4xl md:text-5xl font-black mb-6 tracking-tighter uppercase"
+            className="text-3xl md:text-5xl font-black mb-6 tracking-tight"
           >
-            {aboutPageContent.hero.title}
+            MAIS QUE UMA ACADEMIA,<br />
+            UMA <span className="text-red-600">COMUNIDADE</span> DE ELITE
           </motion.h1>
           
           <motion.p 
@@ -90,13 +75,13 @@ const About: React.FC = () => {
             transition={{ delay: 0.2 }}
             className="text-slate-400 text-base md:text-lg max-w-2xl mx-auto leading-relaxed"
           >
-            {aboutPageContent.hero.description}
+            A FXBROS nasceu da necessidade de profissionalizar o trading no mercado de varejo, trazendo ferramentas e mentalidade institucional para todos.
           </motion.p>
         </div>
       </section>
 
       {/* Mission & Vision */}
-      <section className="py-16 border-y border-slate-900">
+      <section className="py-24 border-y border-slate-900">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <motion.div
@@ -104,10 +89,9 @@ const About: React.FC = () => {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-3xl md:text-4xl font-bold mb-6 uppercase">{aboutPageContent.mission.title}</h2>
-              <div className="w-20 h-1 bg-red-600 mb-8"></div>
-              <p className="text-slate-400 text-lg leading-relaxed mb-8">
-                {aboutPageContent.mission.description}
+              <h2 className="text-2xl font-bold mb-6">Nossa Missão</h2>
+              <p className="text-slate-400 text-base leading-relaxed mb-8">
+                Capacitar indivíduos a alcançarem a liberdade financeira através de uma educação disruptiva, ferramentas de automação de ponta e uma comunidade que respira o mercado 24 horas por dia.
               </p>
               <div className="grid grid-cols-2 gap-6">
                 {stats.map((stat, i) => (
@@ -138,10 +122,9 @@ const About: React.FC = () => {
             >
               <div className="aspect-video rounded-3xl overflow-hidden border border-slate-800 shadow-2xl">
                 <img 
-                  src={aboutPageContent.mission.image} 
-                  alt="Nossa Missão" 
+                  src="https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=1200" 
+                  alt="Team working" 
                   className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
                 />
               </div>
               <div className="absolute -bottom-6 -left-6 p-6 bg-red-600 rounded-2xl shadow-xl hidden md:block">
@@ -153,10 +136,10 @@ const About: React.FC = () => {
       </section>
 
       {/* Values */}
-      <section className="py-16 bg-slate-950/50">
+      <section className="py-24 bg-slate-950/50">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 uppercase">Nossos Valores</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Nossos Valores</h2>
             <p className="text-slate-400">Os pilares que sustentam cada decisão na FXBROS.</p>
           </div>
           
@@ -182,7 +165,7 @@ const About: React.FC = () => {
       </section>
 
       {/* Founder Section */}
-      <section className="py-16 bg-slate-950 border-y border-slate-900">
+      <section className="py-24 bg-slate-950 border-y border-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
                 <motion.div 
@@ -191,9 +174,9 @@ const About: React.FC = () => {
                   viewport={{ once: true }}
                   className="order-2 lg:order-1"
                 >
-                    <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 uppercase">A Mente por Trás do Método</h2>
+                    <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">A Mente por Trás do Método</h2>
                     <div className="prose prose-invert mb-8">
-                        <p className="text-slate-300 leading-relaxed whitespace-pre-line text-lg">
+                        <p className="text-slate-300 leading-relaxed whitespace-pre-line">
                             {homeContent.founder.description}
                         </p>
                     </div>
@@ -214,10 +197,9 @@ const About: React.FC = () => {
                   className="order-1 lg:order-2"
                 >
                     <img 
-                      src={homeContent.founder.imageUrl} 
-                      alt="Founder" 
-                      className="rounded-2xl shadow-2xl border border-slate-800 w-full aspect-[4/5] object-cover"
-                      referrerPolicy="no-referrer"
+                        src={homeContent.founder.imageUrl} 
+                        alt="Founder" 
+                        className="rounded-2xl shadow-2xl border border-slate-800 w-full aspect-[4/5] object-cover"
                     />
                 </motion.div>
             </div>
@@ -225,17 +207,17 @@ const About: React.FC = () => {
       </section>
 
       {/* CTA */}
-      <section className="py-16 text-center">
+      <section className="py-24 text-center">
         <div className="max-w-4xl mx-auto px-4">
-          <h2 className="text-3xl md:text-5xl font-black mb-8 uppercase">Faça parte da nossa história</h2>
+          <h2 className="text-3xl md:text-5xl font-black mb-8">FAÇA PARTE DA NOSSA HISTÓRIA</h2>
           <p className="text-slate-400 text-lg mb-12">
             O próximo capítulo da sua jornada financeira começa aqui. Junte-se a milhares de traders que já mudaram de vida.
           </p>
           <Link 
             to="/plans" 
-            className="inline-flex items-center gap-3 px-10 py-5 bg-red-600 hover:bg-red-700 text-white font-black rounded-full transition-all shadow-xl shadow-red-900/20 uppercase tracking-widest"
+            className="inline-flex items-center gap-3 px-10 py-5 bg-red-600 hover:bg-red-700 text-white font-black rounded-full transition-all shadow-xl shadow-red-900/20"
           >
-            Quero começar agora <ArrowRight className="w-6 h-6" />
+            QUERO COMEÇAR AGORA <ArrowRight className="w-6 h-6" />
           </Link>
         </div>
       </section>

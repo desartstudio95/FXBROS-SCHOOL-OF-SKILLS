@@ -20,9 +20,9 @@ const Methodology: React.FC = () => {
   }, [videos]);
 
   return (
-    <div className="min-h-screen bg-black pt-12 pb-12">
+    <div className="min-h-screen bg-black pt-20 pb-20">
       {/* Header */}
-      <div className="bg-slate-950 border-b border-slate-900 py-12">
+      <div className="bg-slate-950 border-b border-slate-900 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <div className="inline-block mb-4 px-4 py-1.5 rounded-full border border-red-600/30 bg-red-600/10">
                 <span className="text-red-500 text-xs font-bold tracking-wider uppercase">Currículo Oficial</span>

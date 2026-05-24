@@ -18,7 +18,6 @@ export interface User {
   joinDate: string;
   planId?: string; // ID do plano assinado
   allowedModules?: string[]; // Lista de nomes de módulos permitidos (overrides ou adicionais)
-  subscribedCourses?: string[]; // Novos cursos como "SCHOOL OF SKILLS"
   notifications?: AppNotification[];
   completedVideos?: string[];
   favoriteVideos?: string[];
@@ -156,53 +155,6 @@ export interface HomeContent {
     supportEmail: string;
     copyrightText: string;
   };
-}
-
-export interface AboutPageContent {
-  hero: {
-    badge: string;
-    title: string;
-    description: string;
-  };
-  mission: {
-    title: string;
-    description: string;
-    image: string;
-  };
-  values: {
-    title: string;
-    subtitle: string;
-    items: { title: string; description: string }[];
-  };
-}
-
-export interface RobotDefinition {
-  id: string;
-  name: string;
-  type: string;
-  description: string;
-  price: string;
-  features: string[];
-  image: string;
-  accent: string;
-}
-
-export interface RobotsPageContent {
-  hero: {
-    badge: string;
-    title: string;
-    description: string;
-  };
-  stats: { label: string; value: string; suffix: string }[];
-  catalog: {
-    title: string;
-    subtitle: string;
-  };
-}
-
-export interface GlobalSettings {
-  isMaintenanceMode: boolean;
-  maintenanceMessage?: string;
 }
 
 export interface ThemeSettings {

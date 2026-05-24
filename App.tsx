@@ -13,36 +13,24 @@ import Methodology from './pages/Methodology';
 import Robots from './pages/Robots';
 import About from './pages/About';
 import Welcome from './pages/Welcome';
-import SchoolOfSkills from './pages/SchoolOfSkills';
-import Maintenance from './pages/Maintenance';
 import { Terms, Privacy, Risk } from './pages/Legal';
 import { Loader2 } from 'lucide-react';
 import { Toaster } from 'sonner';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
-  const { globalSettings, user } = useApp();
-  
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
-  const isMaintenance = globalSettings.isMaintenanceMode && !isAdmin;
-  const isExcludedPath = location.pathname === '/login' || location.pathname === '/admin-portal' || (location.pathname === '/admin' && isAdmin);
-
-  const isDashboard = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/admin') || location.pathname.startsWith('/welcome') || location.pathname.startsWith('/school-of-skills') || location.pathname === '/admin-portal';
+  const isDashboard = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/admin') || location.pathname.startsWith('/welcome') || location.pathname === '/admin-portal';
   
   // Scroll to top on route change
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
-  if (isMaintenance && !isExcludedPath) {
-    return <Maintenance />;
-  }
-
   return (
     <>
-      {!location.pathname.startsWith('/welcome') && !location.pathname.startsWith('/school-of-skills') && location.pathname !== '/admin-portal' && !isMaintenance && <Navbar />}
+      {!location.pathname.startsWith('/welcome') && location.pathname !== '/admin-portal' && <Navbar />}
       {children}
-      {!isDashboard && !isMaintenance && <Footer />}
+      {!isDashboard && <Footer />}
     </>
   );
 };
@@ -94,7 +82,6 @@ const AppContent: React.FC = () => {
           <Route path="/about" element={<About />} />
           <Route path="/login" element={<Login />} />
           <Route path="/welcome" element={<Welcome />} />
-          <Route path="/school-of-skills" element={<SchoolOfSkills />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin-portal" element={<AdminSetup />} />

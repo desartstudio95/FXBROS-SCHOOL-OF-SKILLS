@@ -9,7 +9,6 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState(''); 
   const [name, setName] = useState('');
-  const [isSchoolOfSkills, setIsSchoolOfSkills] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
   // Views: login, register, verification_sent, forgot_password, reset_sent
@@ -31,9 +30,7 @@ const Login: React.FC = () => {
       let target = '/welcome';
       if (user.role === 'admin' || user.role === 'super_admin') {
           target = '/admin';
-      } else if (user.subscribedCourses?.includes('SCHOOL OF SKILLS')) {
-          target = '/school-of-skills';
-      }
+      } 
       navigate(target);
     }
   }, [user, navigate]);
@@ -80,7 +77,7 @@ const Login: React.FC = () => {
 
             setLoadingText('Criando credenciais...');
             
-            const error = await register(email, password, name, isSchoolOfSkills ? ['SCHOOL OF SKILLS'] : []);
+            const error = await register(email, password, name);
             
             if (!error) {
                 // Success - Verification sent
@@ -105,12 +102,6 @@ const Login: React.FC = () => {
                 if (error === 'unverified') {
                     // Specific status indicating user is valid but email is not verified
                     setView('verification_sent');
-                } else if (error === 'no_course_access') {
-                    triggerError('Acesso restrito. Esta conta não possui o curso SCHOOL OF SKILLS e não pode realizar login.');
-                } else if (error === 'pending_approval') {
-                    triggerError('Sua conta está aguardando aprovação do administrador. Verifique seu email ou tente novamente mais tarde.');
-                } else if (error === 'blocked') {
-                    triggerError('Sua conta foi bloqueada. Entre em contato com o suporte.');
                 } else {
                     triggerError(error);
                 }
@@ -340,24 +331,6 @@ const Login: React.FC = () => {
                     </button>
                 </div>
             )}
-            
-            <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-xl space-y-3">
-                <label className="flex items-center gap-3 cursor-pointer group">
-                    <div className="relative flex items-center">
-                        <input 
-                            type="checkbox"
-                            checked={isSchoolOfSkills}
-                            onChange={(e) => setIsSchoolOfSkills(e.target.checked)}
-                            className="w-5 h-5 rounded border-slate-700 bg-slate-950 text-red-600 focus:ring-red-600 focus:ring-offset-0 transition-all appearance-none border checked:bg-red-600 checked:border-red-600"
-                        />
-                        {isSchoolOfSkills && <CheckCircle2 className="absolute text-white pointer-events-none p-0.5" size={20} />}
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="text-xs font-bold text-white group-hover:text-red-500 transition-colors uppercase tracking-widest">Matricular no School of Skills</span>
-                        <span className="text-[10px] text-slate-500">Rooter Strategy & Mentoria</span>
-                    </div>
-                </label>
-            </div>
 
             <button
                 type="submit"

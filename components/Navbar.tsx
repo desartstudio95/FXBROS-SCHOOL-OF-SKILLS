@@ -31,7 +31,7 @@ const Navbar: React.FC = () => {
               alt="FXBROS Logo" 
               className="w-10 h-10 object-contain transform group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_10px_rgba(220,38,38,0.5)]" 
             />
-            <span className="text-2xl font-bold text-white font-heading tracking-tight">
+            <span className="text-2xl font-bold text-white font-sans tracking-tight">
               FXBROS<span className="text-red-600">.</span>
             </span>
           </Link>

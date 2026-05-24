@@ -102,7 +102,7 @@ const Welcome: React.FC = () => {
          <div className="absolute bottom-[-20%] left-[-10%] w-[60%] h-[60%] bg-blue-900/5 rounded-full blur-[150px]"></div>
       </div>
 
-      <div className="relative z-10 max-w-6xl mx-auto px-6 py-10 md:py-12">
+      <div className="relative z-10 max-w-6xl mx-auto px-6 py-12 md:py-20">
         
         {/* Brand Header */}
         <div className="flex flex-col items-center justify-center mb-16 animate-fadeIn">
@@ -241,7 +241,7 @@ const Welcome: React.FC = () => {
                                 <CheckCircle2 size={14} /> Acesso Liberado
                             </div>
                             
-                            <h1 className="text-4xl md:text-5xl font-black text-white mb-6 leading-tight">
+                            <h1 className="text-4xl md:text-6xl font-black text-white mb-6 leading-tight">
                                 Bem-vindo à <br/>
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">Elite, {user.name.split(' ')[0]}.</span>
                             </h1>

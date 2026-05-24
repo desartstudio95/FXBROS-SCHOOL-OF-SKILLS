@@ -26,7 +26,7 @@ import {
   getDownloadURL
 } from 'firebase/storage';
 import { auth, db, storage } from '../firebaseConfig';
-import type { User, VideoLesson, PricingPlan, HomeContent, ThemeSettings, Testimonial, ModuleResource, PlansPageContent, ModuleMetadata, WelcomeContent, DashboardContent, AppNotification, AboutPageContent, RobotsPageContent, RobotDefinition, GlobalSettings } from '../types';
+import type { User, VideoLesson, PricingPlan, HomeContent, ThemeSettings, Testimonial, ModuleResource, PlansPageContent, ModuleMetadata, WelcomeContent, DashboardContent, AppNotification } from '../types';
 
 import { toast } from 'sonner';
 
@@ -35,7 +35,7 @@ interface AppContextType {
   loadingAuth: boolean;
   login: (email: string, password?: string) => Promise<string | null>;
   loginAsAdminByCode: () => void;
-  register: (email: string, password: string, name: string, courses?: string[]) => Promise<string | null>;
+  register: (email: string, password: string, name: string) => Promise<string | null>;
   // Admin System Functions
   checkSystemInitialized: () => Promise<boolean>;
   registerSystemAdmin: (email: string, password: string, name: string) => Promise<string | null>;
@@ -62,11 +62,6 @@ interface AppContextType {
   deletePlan: (id: string) => Promise<void>;
   updatePlan: (plan: PricingPlan) => Promise<void>;
   
-  robots: RobotDefinition[];
-  addRobot: (robot: RobotDefinition) => Promise<void>;
-  deleteRobot: (id: string) => Promise<void>;
-  updateRobot: (robot: RobotDefinition) => Promise<void>;
-  
   // CMS Content
   plansPageContent: PlansPageContent;
   updatePlansPageContent: (content: PlansPageContent) => Promise<void>;
@@ -79,13 +74,6 @@ interface AppContextType {
   updateWelcomeContent: (content: WelcomeContent) => Promise<void>;
   dashboardContent: DashboardContent;
   updateDashboardContent: (content: DashboardContent) => Promise<void>;
-  aboutPageContent: AboutPageContent;
-  updateAboutPageContent: (content: AboutPageContent) => Promise<void>;
-  robotsPageContent: RobotsPageContent;
-  updateRobotsPageContent: (content: RobotsPageContent) => Promise<void>;
-  
-  globalSettings: GlobalSettings;
-  updateGlobalSettings: (settings: GlobalSettings) => Promise<void>;
   
   themeSettings: ThemeSettings;
   updateThemeSettings: (settings: ThemeSettings) => void;
@@ -134,7 +122,7 @@ const defaultModulesMetadata: ModuleMetadata[] = [
 ];
 
 const defaultHomeContent: HomeContent = {
-  hero: { badge: 'Educação de Nível Institucional', titleLine1: 'Aprenda, Opere e', titleHighlight: 'Seja Lucrativo', description: 'Junte-se ao círculo de elite de traders lucrativos. Combinamos análise técnica, dados institucionais e treinamento psicológico rigoroso.', bgImage: 'https://images.unsplash.com/photo-1518186285589-2f7649de83e0?auto=format&fit=crop&q=80&w=1920' },
+  hero: { badge: 'Educação de Nível Institucional', titleLine1: 'Domine a Arte da', titleHighlight: 'Precisão no Trading', description: 'Junte-se ao círculo de elite de traders lucrativos. Combinamos análise técnica, dados institucionais e treinamento psicológico rigoroso.', bgImage: 'https://i.ibb.co/8Lt4Yrb1/Whisk-76888b109aec7939e59491f4a2baecafdr.jpg' },
   about: { badge: 'Nossa Metodologia', title: 'Trading Baseado em Dados. Sem Achismos.', description: 'Ensinamos você a interpretar o mercado pela ótica institucional.', imageUrl: 'https://i.ibb.co/bjrMzyJP/Whisk-b7b5d8d9cc7bdb4b2c94e4cb8a9d59addr.jpg', items: ["Análise Institucional", "Gestão de Risco", "Algoritmos", "Psicologia"] },
   founder: { 
     name: 'Isaac Mugabe', 
@@ -171,38 +159,6 @@ const defaultDashboardContent: DashboardContent = {
 };
 
 const defaultThemeSettings: ThemeSettings = { fontFamily: 'Inter', baseFontSize: '16px' };
-
-const defaultAboutPageContent: AboutPageContent = {
-  hero: { badge: 'Nossa História', title: 'MAIS QUE UMA ACADEMIA, UMA COMUNIDADE DE ELITE', description: 'A FXBROS nasceu da necessidade de profissionalizar o trading no mercado de varejo, trazendo ferramentas e mentalidade institucional para todos.' },
-  mission: { title: 'Nossa Missão', description: 'Capacitar indivíduos a alcançarem a liberdade financeira através de uma educação disruptiva, ferramentas de automação de ponta e uma comunidade que respira o mercado 24 horas por dia.', image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=1200' },
-  values: { title: 'Nossos Valores', subtitle: 'Os pilares que sustentam cada decisão na FXBROS.', items: [
-    { title: "Transparência Total", description: "Acreditamos que a confiança é a base de qualquer relação no mercado financeiro." },
-    { title: "Foco em Resultados", description: "Não vendemos sonhos, vendemos metodologia." },
-    { title: "Inovação Constante", description: "O mercado evolui e nós também." }
-  ]}
-};
-
-const defaultRobots: RobotDefinition[] = [
-  { id: 'alpha-v1', name: 'Alpha Sentinel V1', type: 'Scalping HFT', description: 'Especializado em capturar micro-movimentos com execução em milissegundos.', price: '12.500 MT', features: ['Execução HFT', 'Trailing Stop Inteligente', 'Filtro de Notícias'], image: 'https://images.unsplash.com/photo-1555255707-c07966088b7b?auto=format&fit=crop&q=80&w=800', accent: 'blue' },
-  { id: 'omega-trend', name: 'Omega Trend Hunter', type: 'Trend Following', description: 'Identifica e surfa grandes tendências institucionais com baixo drawdown.', price: '18.900 MT', features: ['Análise Multi-Timeframe', 'Gestão de Risco Dinâmica', 'Alertas Mobile'], image: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&q=80&w=800', accent: 'red' },
-  { id: 'neural-grid', name: 'Neural Grid Master', type: 'Neural Network', description: 'Utiliza redes neurais para adaptar estratégias de grid em mercados laterais.', price: '25.000 MT', features: ['IA Adaptativa', 'Grid Não-Linear', 'Proteção de Capital'], image: 'https://images.unsplash.com/photo-1531746790731-6c087fecd05a?auto=format&fit=crop&q=80&w=800', accent: 'purple' }
-];
-
-const defaultRobotsPageContent: RobotsPageContent = {
-  hero: { badge: 'Tecnologia de Ponta', title: 'AUTOMAÇÃO INTELIGENTE PARA O MERCADO FINANCEIRO', description: 'Nossos robôs utilizam algoritmos avançados e inteligência artificial para executar operações com precisão cirúrgica.' },
-  stats: [
-    { label: "Volume Negociado", value: "500M+", suffix: "MT" },
-    { label: "Precisão Média", value: "94", suffix: "%" },
-    { label: "Usuários Ativos", value: "2.5", suffix: "k" },
-    { label: "Tempo de Resposta", value: "0.1", suffix: "ms" }
-  ],
-  catalog: { title: 'Escolha sua Arma', subtitle: 'Sistemas desenvolvidos para diferentes perfis de risco e objetivos financeiros.' }
-};
-
-const defaultGlobalSettings: GlobalSettings = {
-  isMaintenanceMode: false,
-  maintenanceMessage: 'Estamos em manutenção para melhorar sua experiência. Voltamos em breve!'
-};
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -259,11 +215,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [plansPageContent, setPlansPageContent] = usePersistedState<PlansPageContent>('fxbros_plans_page', defaultPlansPageContent);
   const [welcomeContent, setWelcomeContent] = usePersistedState<WelcomeContent>('fxbros_welcome', defaultWelcomeContent);
   const [dashboardContent, setDashboardContent] = usePersistedState<DashboardContent>('fxbros_dashboard_v2', defaultDashboardContent);
-  const [aboutPageContent, setAboutPageContent] = usePersistedState<AboutPageContent>('fxbros_about_page', defaultAboutPageContent);
-  const [robots, setRobots] = usePersistedState<RobotDefinition[]>('fxbros_robots', defaultRobots);
-  const [robotsPageContent, setRobotsPageContent] = usePersistedState<RobotsPageContent>('fxbros_robots_page', defaultRobotsPageContent);
   const [themeSettings, setThemeSettings] = usePersistedState<ThemeSettings>('fxbros_theme', defaultThemeSettings);
-  const [globalSettings, setGlobalSettings] = useState<GlobalSettings>(defaultGlobalSettings);
 
   // User Progress
   const [completedVideoIds, setCompletedVideoIds] = useState<string[]>([]);
@@ -344,25 +296,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
   }, []);
 
-  const fetchGlobalSettings = useCallback(async () => {
-      try {
-          const docSnap = await getDoc(doc(db, "settings", "global"));
-          if (docSnap.exists()) {
-              setGlobalSettings(docSnap.data() as GlobalSettings);
-          } else {
-              // Seed default
-              await setDoc(doc(db, "settings", "global"), defaultGlobalSettings);
-              setGlobalSettings(defaultGlobalSettings);
-          }
-      } catch (error) {
-          console.error("Error fetching global settings:", error);
-      }
-  }, []);
-
-  useEffect(() => {
-    fetchGlobalSettings();
-  }, [fetchGlobalSettings]);
-
   useEffect(() => {
       if (user) {
           fetchVideos();
@@ -426,39 +359,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               await signOut(auth);
               return 'unverified';
           }
-
-          // Fetch user data from firestore to check status and courses
-          const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
-          if (userDoc.exists()) {
-              const userData = userDoc.data() as User;
-              
-              // Only restrict if NOT an admin
-              if (userData.role !== 'admin' && userData.role !== 'super_admin') {
-                  const hasSOS = userData.subscribedCourses?.includes('SCHOOL OF SKILLS');
-                  
-                  if (!hasSOS) {
-                      await signOut(auth);
-                      return 'no_course_access'; // Custom error code
-                  }
-                  
-                  if (userData.status === 'pending') {
-                      await signOut(auth);
-                      return 'pending_approval';
-                  }
-
-                  if (userData.status === 'blocked') {
-                    await signOut(auth);
-                    return 'blocked';
-                  }
-              }
-          }
-
           return null; // Success
       } catch (error: any) {
-          console.error("Login Error:", error);
-          if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-              return 'Credenciais inválidas. Verifique seu email e senha.';
-          }
           return error.message;
       }
   };
@@ -467,7 +369,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       console.log("Login by code not implemented in Firebase version");
   };
 
-  const register = async (email: string, password: string, name: string, courses: string[] = []): Promise<string | null> => {
+  const register = async (email: string, password: string, name: string): Promise<string | null> => {
       try {
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
           await sendEmailVerification(userCredential.user);
@@ -479,8 +381,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               role: 'member',
               status: 'pending',
               joinDate: new Date().toISOString(),
-              notifications: [],
-              subscribedCourses: courses
+              notifications: []
           };
           
           await setDoc(doc(db, "users", userCredential.user.uid), newUser);
@@ -702,35 +603,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const updateHomeContent = async (content: HomeContent) => setHomeContent(content);
   const updateWelcomeContent = async (content: WelcomeContent) => setWelcomeContent(content);
   const updateDashboardContent = async (content: DashboardContent) => setDashboardContent(content);
-  const updateAboutPageContent = async (content: AboutPageContent) => setAboutPageContent(content);
-  const updateRobotsPageContent = async (content: RobotsPageContent) => setRobotsPageContent(content);
-
-  const updateGlobalSettings = async (settings: GlobalSettings) => {
-    try {
-      await setDoc(doc(db, "settings", "global"), settings);
-      setGlobalSettings(settings);
-      toast.success("Configurações do sistema atualizadas!");
-    } catch (e) {
-      console.error("Erro ao atualizar configurações globais:", e);
-      toast.error("Erro ao salvar configurações.");
-    }
-  };
-
-  const addRobot = async (robot: RobotDefinition) => {
-    setRobots([...robots, robot]);
-    toast.success("Robô adicionado com sucesso");
-  };
-
-  const deleteRobot = async (id: string) => {
-    setRobots(robots.filter(r => r.id !== id));
-    toast.info("Robô removido");
-  };
-
-  const updateRobot = async (robot: RobotDefinition) => {
-    setRobots(robots.map(r => r.id === robot.id ? robot : r));
-    toast.success("Robô atualizado");
-  };
-
   const updateModuleMetadata = async (meta: ModuleMetadata) => {
       try {
           await setDoc(doc(db, "modules", meta.id), meta);
@@ -954,16 +826,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       updateWelcomeContent,
       dashboardContent,
       updateDashboardContent,
-      aboutPageContent,
-      updateAboutPageContent,
-      robotsPageContent,
-      updateRobotsPageContent,
-      globalSettings,
-      updateGlobalSettings,
-      robots,
-      addRobot,
-      updateRobot,
-      deleteRobot,
       
       themeSettings,
       updateThemeSettings,

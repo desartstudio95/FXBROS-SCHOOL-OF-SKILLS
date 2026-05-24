@@ -92,16 +92,6 @@
         "type": { "type": "string", "enum": ["text", "system"] }
       },
       "required": ["id", "userId", "content", "timestamp"]
-    },
-    "GlobalSettings": {
-      "title": "Global Settings",
-      "description": "Application-wide configuration",
-      "type": "object",
-      "properties": {
-        "isMaintenanceMode": { "type": "boolean" },
-        "maintenanceMessage": { "type": "string" }
-      },
-      "required": ["isMaintenanceMode"]
     }
   },
   "firestore": {
@@ -110,8 +100,6 @@
     "/videos/{videoId}": { "schema": "VideoLesson", "description": "Video lessons" },
     "/resources/{resourceId}": { "schema": "ModuleResource", "description": "Module resources" },
     "/chart_comments/{commentId}": { "schema": "ChartComment", "description": "Chart community comments" },
-    "/chat_messages/{messageId}": { "schema": "ChatMessage", "description": "VIP community chat messages" },
-    "/sos_chat/{messageId}": { "schema": "ChatMessage", "description": "School of Skills course chat" },
-    "/settings/{settingId}": { "schema": "GlobalSettings", "description": "Global application settings" }
+    "/chat_messages/{messageId}": { "schema": "ChatMessage", "description": "VIP community chat messages" }
   }
 }

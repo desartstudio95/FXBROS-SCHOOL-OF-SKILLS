@@ -1354,8 +1354,8 @@ const Dashboard: React.FC = () => {
                     </div>
 
                     {/* Continue Watching */}
-                    <div className="mb-4">
-                         <div className="flex items-center justify-between mb-3">
+                    <div className="mb-8">
+                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-lg font-bold text-white flex items-center gap-2"><PlayCircle className="text-red-500" size={20} /> {dashboardContent.sections.continueWatchingTitle}</h2>
                          </div>
                          

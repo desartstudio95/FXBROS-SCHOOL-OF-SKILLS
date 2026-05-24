@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, TrendingUp, Star, MessageSquarePlus, X, Instagram, Brain, MessageCircle, Server, Activity, ShieldAlert, Edit3 } from 'lucide-react';
+import { ArrowRight, CheckCircle2, TrendingUp, Star, MessageSquarePlus, X, Instagram, Brain, MessageCircle, Server, Activity, ShieldAlert } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 const Home: React.FC = () => {
   const { homeContent, user, testimonials, addTestimonial } = useApp();
   const navigate = useNavigate();
-  const isAdmin = user && (user.role === 'admin' || user.role === 'super_admin');
   
   // Feedback Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -83,23 +82,13 @@ const Home: React.FC = () => {
 
   return (
     <div className="bg-black min-h-screen">
-      {isAdmin && (
-        <div className="fixed bottom-6 right-6 z-50">
-          <button 
-            onClick={() => navigate('/admin-portal', { state: { targetSection: 'cms' } })}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full font-bold shadow-lg shadow-red-900/40 transition-all border border-red-500/20"
-          >
-            <Edit3 size={18} /> Editar Página
-          </button>
-        </div>
-      )}
       
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img 
             src={homeContent.hero.bgImage} 
-            alt="Laptop com gráficos de trading de Forex" 
+            alt="Forex Market Background" 
             className="w-full h-full object-cover object-center opacity-40"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/30"></div>
@@ -110,14 +99,14 @@ const Home: React.FC = () => {
             <span className="text-red-400 text-xs font-bold tracking-widest uppercase">{homeContent.hero.badge}</span>
           </div>
           
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight mb-6 leading-tight">
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight mb-6 leading-tight">
             {homeContent.hero.titleLine1} <br />
             <span className="text-red-600">
               {homeContent.hero.titleHighlight}
             </span>
           </h1>
           
-          <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed uppercase">
+          <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed">
             {homeContent.hero.description}
           </p>
           
@@ -166,7 +155,7 @@ const Home: React.FC = () => {
       </section>
 
       {/* About Section */}
-      <section className="py-16 bg-black border-t border-slate-900">
+      <section className="py-24 bg-black border-t border-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="relative">
@@ -196,7 +185,7 @@ const Home: React.FC = () => {
       </section>
 
       {/* Journey Section */}
-      <section className="py-16 bg-slate-950 border-y border-slate-900 relative overflow-hidden">
+      <section className="py-24 bg-slate-950 border-y border-slate-900 relative overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-red-500/50 to-transparent"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-16">
@@ -224,7 +213,7 @@ const Home: React.FC = () => {
       </section>
 
       {/* Testimonials */}
-      <section className="py-16 bg-black">
+      <section className="py-24 bg-black">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-end mb-12">
             <div>
@@ -319,7 +308,7 @@ const Home: React.FC = () => {
         )}
 
       {/* Footer CTA */}
-      <section className="py-16 bg-gradient-to-b from-black to-red-950/20 border-t border-slate-900 text-center">
+      <section className="py-24 bg-gradient-to-b from-black to-red-950/20 border-t border-slate-900 text-center">
         <div className="max-w-4xl mx-auto px-4">
           <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">Pronto para começar?</h2>
           <p className="text-lg text-slate-300 mb-10">Junte-se à academia hoje e tenha acesso instantâneo.</p>
