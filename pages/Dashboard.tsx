@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { motion } from 'framer-motion';
-import { PlayCircle, Clock, BookOpen, Search, Bell, BellOff, ChevronRight, CheckCircle2, CheckCircle, Heart, Settings, X, User as UserIcon, Camera, LayoutGrid, ArrowLeft, ArrowRight, Play, FileText, Download, Check, Upload, ListMusic, ChevronDown, LogOut, Bot, Sparkles, Menu, Loader2, Save, Trash2, AlertTriangle, Mail, GraduationCap, Trophy, Target, RefreshCw, Eye, SkipForward, MessageSquarePlus, Star, Layers, Calculator, DollarSign, Percent, Calendar, TrendingUp, Activity, BarChart2, Edit2, Info, Maximize2, Minimize2, Lock, Sun, Moon } from 'lucide-react';
+import { PlayCircle, Clock, BookOpen, Search, Bell, BellOff, ChevronRight, CheckCircle2, CheckCircle, Heart, Settings, X, User as UserIcon, Camera, LayoutGrid, ArrowLeft, ArrowRight, Play, FileText, Download, Check, Upload, ListMusic, ChevronDown, LogOut, Bot, Sparkles, Menu, Loader2, Save, Trash2, AlertTriangle, Mail, GraduationCap, Trophy, Target, RefreshCw, Eye, SkipForward, MessageSquarePlus, Star, Layers, Calculator, DollarSign, Percent, Calendar, TrendingUp, Activity, BarChart2, Edit2, Info, Maximize2, Minimize2, Lock, Sun, Moon, Video } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { VideoLesson, ModuleResource, ModuleMetadata, DashboardContent } from '../types';
 import AIAssistant from '../components/AIAssistant';
@@ -9,6 +9,8 @@ import PdfViewer from '../components/PdfViewer';
 import CustomVideoPlayer from '../components/CustomVideoPlayer';
 import ChartComments from '../components/ChartComments';
 import VIPChat from '../components/VIPChat';
+import GoogleDriveVideos from '../components/GoogleDriveVideos';
+import GoogleMeetSessions from '../components/GoogleMeetSessions';
 
 interface ModuleData {
   name: string;
@@ -96,7 +98,7 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
 
   // State
-  const [activeTab, setActiveTab] = useState<'home' | 'modules' | 'ai' | 'calculator' | 'resources' | 'favorites' | 'settings' | 'quiz' | 'calendar' | 'chart' | 'chat'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'modules' | 'ai' | 'calculator' | 'resources' | 'favorites' | 'settings' | 'quiz' | 'calendar' | 'chart' | 'chat' | 'drive' | 'meet'>('home');
   const [selectedVideo, setSelectedVideo] = useState<VideoLesson | null>(null);
   const [viewingResource, setViewingResource] = useState<ModuleResource | null>(null); // For PDF/Video Viewer
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -549,6 +551,18 @@ const Dashboard: React.FC = () => {
                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200 ${activeTab === 'chat' ? 'bg-gradient-to-r from-red-600 to-red-800 text-white shadow-lg shadow-red-900/20' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}
                     >
                         <MessageSquarePlus size={18} /> Grupo VIP
+                    </button>
+                    <button 
+                         onClick={() => { setActiveTab('drive'); setSelectedVideo(null); setIsSidebarOpen(false); }}
+                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200 ${activeTab === 'drive' ? 'bg-gradient-to-r from-red-600 to-red-800 text-white shadow-lg shadow-red-900/20' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}
+                    >
+                        <Play size={18} /> Drive Videos
+                    </button>
+                    <button 
+                         onClick={() => { setActiveTab('meet'); setSelectedVideo(null); setIsSidebarOpen(false); }}
+                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200 ${activeTab === 'meet' ? 'bg-gradient-to-r from-red-600 to-red-800 text-white shadow-lg shadow-red-900/20' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}
+                    >
+                        <Video size={18} /> Google Meet
                     </button>
                     <button 
                          onClick={() => { setActiveTab('quiz'); setSelectedVideo(null); setIsSidebarOpen(false); }}
@@ -1193,6 +1207,20 @@ const Dashboard: React.FC = () => {
                         <p className="text-slate-400 text-sm">Conecte-se com outros membros e compartilhe insights em tempo real.</p>
                     </div>
                     <VIPChat />
+                </div>
+            )}
+
+            {/* DRIVE VIDEOS VIEW */}
+            {activeTab === 'drive' && (
+                <div className="max-w-6xl mx-auto animate-fadeIn">
+                    <GoogleDriveVideos />
+                </div>
+            )}
+
+            {/* MEET SESSIONS VIEW */}
+            {activeTab === 'meet' && (
+                <div className="max-w-6xl mx-auto animate-fadeIn">
+                    <GoogleMeetSessions />
                 </div>
             )}
 
