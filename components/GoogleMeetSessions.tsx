@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { googleSignIn, getAccessToken } from '../googleAuth';
-import { Video, Calendar, Loader2, ExternalLink } from 'lucide-react';
+import { useApp } from '../context/AppContext';
+import { Video, Calendar, Loader2, AlertCircle } from 'lucide-react';
 
 interface CalendarEvent {
   id: string;
@@ -13,57 +13,52 @@ interface CalendarEvent {
 }
 
 const GoogleMeetSessions: React.FC = () => {
+  const { workspaceSettings } = useApp();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(false);
-  const [needsAuth, setNeedsAuth] = useState(true);
-
-  const fetchEvents = async (token: string) => {
-    setLoading(true);
-    try {
-      const timeMin = new Date().toISOString();
-      const res = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(timeMin)}&singleEvents=true&orderBy=startTime`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      if (!res.ok) {
-         if (res.status === 401) setNeedsAuth(true);
-         throw new Error('Failed to fetch calendar events');
-      }
-      const data = await res.json();
-      
-      // Filter out events that have a Google Meet link (hangoutLink)
-      const meetEvents = (data.items || []).filter((event: CalendarEvent) => !!event.hangoutLink);
-      setEvents(meetEvents);
-      setNeedsAuth(false);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getAccessToken().then((token) => {
-      if (token) {
-         fetchEvents(token);
-      } else {
-         setNeedsAuth(true);
+    const fetchEvents = async () => {
+      const { googleApiKey, googleCalendarId } = workspaceSettings;
+      
+      if (!googleApiKey || !googleCalendarId) {
+         setError('Configurações não encontradas. O Administrador precisa configurar a Chave de API e o ID do calendário.');
+         return;
       }
-    });
-  }, []);
 
-  const handleLogin = async () => {
-    try {
-      const result = await googleSignIn();
-      if (result) {
-        await fetchEvents(result.accessToken);
+      setLoading(true);
+      setError(null);
+      try {
+        const timeMin = new Date().toISOString();
+        const res = await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleCalendarId)}/events?timeMin=${encodeURIComponent(timeMin)}&singleEvents=true&orderBy=startTime&key=${googleApiKey}`
+        );
+        if (!res.ok) {
+           const errorData = await res.json().catch(() => null);
+           console.error("Calendar API Error:", errorData);
+           if (res.status === 403) {
+             throw new Error('Falha de permissão. Verifique se o calendário está definido como "Público" e se a API Key tem as permissões corretas do Google Calendar API.');
+           } else if (res.status === 400 || res.status === 404) {
+             throw new Error('Requisição inválida. Verifique se a API Key e o ID do calendário estão corretos.');
+           }
+           throw new Error('Falha ao carregar sessões agendadas.');
+        }
+        const data = await res.json();
+        
+        // Filter out events that have a Google Meet link (hangoutLink)
+        const meetEvents = (data.items || []).filter((event: CalendarEvent) => !!event.hangoutLink);
+        setEvents(meetEvents);
+      } catch (err: any) {
+        console.error(err);
+        setError(err.message || 'Erro desconhecido ao carregar as sessões.');
+      } finally {
+         setLoading(false);
       }
-    } catch (err) {
-      console.error('Login failed', err);
-    }
-  };
+    };
+
+    fetchEvents();
+  }, [workspaceSettings]);
 
   const formatDate = (eventStart: { dateTime?: string; date?: string }) => {
     const dateStr = eventStart.dateTime || eventStart.date;
@@ -77,21 +72,14 @@ const GoogleMeetSessions: React.FC = () => {
     });
   };
 
-  if (needsAuth) {
+  if (error) {
     return (
       <div className="flex flex-col items-center py-20 animate-fadeIn">
-        <Video size={48} className="text-slate-600 mb-4" />
-        <h2 className="text-xl font-bold text-white mb-2">Conectar Google Meet & Calendário</h2>
+        <AlertCircle size={48} className="text-red-500 mb-4" />
+        <h2 className="text-xl font-bold text-white mb-2">Sessões Temporariamente Indisponíveis</h2>
         <p className="text-slate-400 mb-6 text-center max-w-sm">
-          Conecte sua conta do Google para visualizar e acessar suas sessões ao vivo do Google Meet.
+          {error}
         </p>
-        <button
-          onClick={handleLogin}
-          className="flex items-center gap-3 px-6 py-3 bg-white text-black font-bold rounded-lg hover:bg-slate-200 transition-colors"
-        >
-          <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" className="w-5 h-5" />
-          Conectar com Google
-        </button>
       </div>
     );
   }

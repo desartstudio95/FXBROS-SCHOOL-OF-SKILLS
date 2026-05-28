@@ -56,12 +56,12 @@ const generateVideoThumbnail = (file: File): Promise<Blob | null> => {
 };
 
 const Admin: React.FC = () => {
-  const { user, videos, addVideo, deleteVideo, updateVideo, uploadVideo, uploadImage, resources, uploadResource, deleteResource, plans, addPlan, deletePlan, updatePlan, homeContent, updateHomeContent, themeSettings, updateThemeSettings, allUsers, updateUserStatus, updateUserModules, updateUserPlan, deleteUser, sendGlobalAnnouncement, plansPageContent, updatePlansPageContent, updateModuleMetadata, deleteModuleMetadata, modulesMetadata, welcomeContent, updateWelcomeContent, dashboardContent, updateDashboardContent, testimonials, deleteTestimonial } = useApp();
+  const { user, videos, addVideo, deleteVideo, updateVideo, uploadVideo, uploadImage, resources, uploadResource, deleteResource, plans, addPlan, deletePlan, updatePlan, homeContent, updateHomeContent, themeSettings, updateThemeSettings, allUsers, updateUserStatus, updateUserModules, updateUserPlan, deleteUser, sendGlobalAnnouncement, plansPageContent, updatePlansPageContent, updateModuleMetadata, deleteModuleMetadata, modulesMetadata, welcomeContent, updateWelcomeContent, dashboardContent, updateDashboardContent, testimonials, deleteTestimonial, workspaceSettings, updateWorkspaceSettings } = useApp();
   const location = useLocation();
   
   const initialSection = user?.role === 'super_admin' ? 'cms' : 'members';
 
-  const [activeSection, setActiveSection] = useState<'videos' | 'plans' | 'cms' | 'appearance' | 'members' | 'announcements' | 'reviews'>(initialSection);
+  const [activeSection, setActiveSection] = useState<'videos' | 'plans' | 'cms' | 'appearance' | 'integrations' | 'members' | 'announcements' | 'reviews'>(initialSection);
   const [activeContentTab, setActiveContentTab] = useState<'videos' | 'resources' | 'modules'>('modules');
   const [activePlanTab, setActivePlanTab] = useState<'cards' | 'page_settings'>('cards');
   const [activeCmsTab, setActiveCmsTab] = useState<'home' | 'plans' | 'welcome' | 'dashboard'>('home');
@@ -610,6 +610,9 @@ const Admin: React.FC = () => {
           </button>
           <button onClick={() => setActiveSection('appearance')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeSection === 'appearance' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}>
             <Palette size={18} /> Aparência
+          </button>
+          <button onClick={() => setActiveSection('integrations')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeSection === 'integrations' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}>
+            <Globe size={18} /> Integrações
           </button>
         </nav>
       </aside>
@@ -1179,6 +1182,75 @@ const Admin: React.FC = () => {
                      </button>
                  </form>
              </div>
+        )}
+
+        {/* INTEGRATIONS SECTION */}
+        {activeSection === 'integrations' && (
+            <div className="max-w-2xl mx-auto space-y-8">
+                <h2 className="text-2xl font-bold border-b border-slate-800 pb-4">Integrações Google Workspace</h2>
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 mt-8 border-t-4 border-t-blue-500">
+                    <p className="text-slate-400 text-sm mb-6">
+                        Configure a chave de API e os IDs para exibir vídeos do seu Google Drive e eventos do Google Meet na plataforma para os clientes.
+                        <br/><span className="text-xs text-slate-500">Nota: O calendário e a pasta do drive devem estar configurados como "Públicos".</span>
+                    </p>
+                    
+                    <form onSubmit={async (e) => {
+                        e.preventDefault();
+                        const formData = new FormData(e.currentTarget);
+                        await updateWorkspaceSettings({
+                            googleApiKey: formData.get('googleApiKey') as string,
+                            googleDriveFolderId: formData.get('googleDriveFolderId') as string,
+                            googleCalendarId: formData.get('googleCalendarId') as string
+                        });
+                        setSuccessMsg("Integrações salvas com sucesso!");
+                        setTimeout(() => setSuccessMsg(''), 3000);
+                    }} className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 mb-2">Google API Key</label>
+                            <input 
+                                type="password" 
+                                name="googleApiKey"
+                                defaultValue={workspaceSettings?.googleApiKey || ''}
+                                placeholder="AIzaSy..."
+                                className="w-full bg-black border border-slate-800 rounded-lg p-3 text-white focus:border-blue-500 focus:outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 mb-2">Google Drive Folder ID</label>
+                            <input 
+                                type="text" 
+                                name="googleDriveFolderId"
+                                defaultValue={workspaceSettings?.googleDriveFolderId || ''}
+                                placeholder="Ex: 1A2b3C4d5E6f7G8h9I0j"
+                                className="w-full bg-black border border-slate-800 rounded-lg p-3 text-white focus:border-blue-500 focus:outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 mb-2">Google Calendar ID</label>
+                            <input 
+                                type="text" 
+                                name="googleCalendarId"
+                                defaultValue={workspaceSettings?.googleCalendarId || ''}
+                                placeholder="example@group.calendar.google.com"
+                                className="w-full bg-black border border-slate-800 rounded-lg p-3 text-white focus:border-blue-500 focus:outline-none"
+                            />
+                        </div>
+                        <div className="flex justify-end pt-4">
+                            <button 
+                                type="submit" 
+                                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors flex items-center gap-2 shadow-lg shadow-blue-900/20"
+                            >
+                                <Save size={18} /> Salvar Integrações
+                            </button>
+                        </div>
+                        {successMsg && (
+                            <div className="mt-4 p-4 bg-green-900/20 border border-green-900/50 rounded-lg text-green-500 flex items-center gap-2 animate-fadeIn">
+                                <Check size={18} /> {successMsg}
+                            </div>
+                        )}
+                    </form>
+                </div>
+            </div>
         )}
 
         {/* APPEARANCE SECTION */}

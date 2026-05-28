@@ -93,7 +93,9 @@ const Dashboard: React.FC = () => {
     addTestimonial, 
     refreshUserProfile, 
     uploadImage, 
-    updateModuleMetadata 
+    updateModuleMetadata,
+    workspaceSettings,
+    updateWorkspaceSettings
   } = useApp();
   const navigate = useNavigate();
 
@@ -556,7 +558,7 @@ const Dashboard: React.FC = () => {
                          onClick={() => { setActiveTab('drive'); setSelectedVideo(null); setIsSidebarOpen(false); }}
                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200 ${activeTab === 'drive' ? 'bg-gradient-to-r from-red-600 to-red-800 text-white shadow-lg shadow-red-900/20' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}
                     >
-                        <Play size={18} /> Drive Videos
+                        <Play size={18} /> Google Drive
                     </button>
                     <button 
                          onClick={() => { setActiveTab('meet'); setSelectedVideo(null); setIsSidebarOpen(false); }}
@@ -943,6 +945,8 @@ const Dashboard: React.FC = () => {
                             <Trash2 size={18} /> Excluir Minha Conta
                         </button>
                     </div>
+
+
                 </div>
             ) : null}
             

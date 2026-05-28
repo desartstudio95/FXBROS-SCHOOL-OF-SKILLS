@@ -1,3 +1,9 @@
+export interface WorkspaceSettings {
+  googleApiKey?: string;
+  googleDriveFolderId?: string;
+  googleCalendarId?: string;
+}
+
 export interface AppNotification {
   id: string;
   title: string;

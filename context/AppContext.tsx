@@ -26,7 +26,7 @@ import {
   getDownloadURL
 } from 'firebase/storage';
 import { auth, db, storage } from '../firebaseConfig';
-import type { User, VideoLesson, PricingPlan, HomeContent, ThemeSettings, Testimonial, ModuleResource, PlansPageContent, ModuleMetadata, WelcomeContent, DashboardContent, AppNotification } from '../types';
+import type { User, VideoLesson, PricingPlan, HomeContent, ThemeSettings, Testimonial, ModuleResource, PlansPageContent, ModuleMetadata, WelcomeContent, DashboardContent, AppNotification, WorkspaceSettings } from '../types';
 
 import { toast } from 'sonner';
 
@@ -74,6 +74,9 @@ interface AppContextType {
   updateWelcomeContent: (content: WelcomeContent) => Promise<void>;
   dashboardContent: DashboardContent;
   updateDashboardContent: (content: DashboardContent) => Promise<void>;
+  
+  workspaceSettings: WorkspaceSettings;
+  updateWorkspaceSettings: (settings: WorkspaceSettings) => Promise<void>;
   
   themeSettings: ThemeSettings;
   updateThemeSettings: (settings: ThemeSettings) => void;
@@ -217,6 +220,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [dashboardContent, setDashboardContent] = usePersistedState<DashboardContent>('fxbros_dashboard_v2', defaultDashboardContent);
   const [themeSettings, setThemeSettings] = usePersistedState<ThemeSettings>('fxbros_theme', defaultThemeSettings);
 
+  const [workspaceSettings, setWorkspaceSettings] = useState<WorkspaceSettings>({});
+
+  // Real data from Firestore
+  const fetchWorkspaceSettings = async () => {
+    try {
+        const docRef = doc(db, "settings", "integrations");
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            setWorkspaceSettings(docSnap.data() as WorkspaceSettings);
+        }
+    } catch (e) {
+        console.error("Error fetching workspace settings", e);
+    }
+  };
+
+  const updateWorkspaceSettings = async (settings: WorkspaceSettings) => {
+    try {
+        await setDoc(doc(db, "settings", "integrations"), settings, { merge: true });
+        setWorkspaceSettings(settings);
+        toast.success("Configurações atualizadas!");
+    } catch (e) {
+        console.error("Error updating workspace settings", e);
+        toast.error("Erro ao atualizar configurações");
+    }
+  };
+
   // User Progress
   const [completedVideoIds, setCompletedVideoIds] = useState<string[]>([]);
   const [favoriteVideoIds, setFavoriteVideoIds] = useState<string[]>([]);
@@ -297,6 +326,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, []);
 
   useEffect(() => {
+      fetchWorkspaceSettings();
       if (user) {
           fetchVideos();
           fetchResources();
@@ -826,6 +856,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       updateWelcomeContent,
       dashboardContent,
       updateDashboardContent,
+      
+      workspaceSettings,
+      updateWorkspaceSettings,
       
       themeSettings,
       updateThemeSettings,
