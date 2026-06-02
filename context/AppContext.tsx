@@ -208,7 +208,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [loadingAuth, setLoadingAuth] = useState(true);
 
   // --- CONTENT STATE (Local Persisted for now) ---
-  const [plans, setPlans] = usePersistedState<PricingPlan[]>('fxbros_plans', defaultPlans);
+  const [plans, setPlans] = useState<PricingPlan[]>(defaultPlans);
   // const [modulesMetadata, setModulesMetadata] = usePersistedState<ModuleMetadata[]>('fxbros_modules', defaultModulesMetadata);
   const [modulesMetadata, setModulesMetadata] = useState<ModuleMetadata[]>([]);
   const [testimonials, setTestimonials] = usePersistedState<Testimonial[]>('fxbros_testimonials', defaultTestimonials);
@@ -289,6 +289,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
   }, []);
 
+  const fetchPlans = useCallback(async () => {
+      try {
+          const querySnapshot = await getDocs(collection(db, "plans"));
+          if (querySnapshot.empty) {
+              setPlans(defaultPlans);
+              return;
+          }
+          const pList: PricingPlan[] = [];
+          querySnapshot.forEach((doc) => {
+              const data = doc.data();
+              pList.push({
+                  id: doc.id,
+                  name: data.name,
+                  price: data.price,
+                  features: data.features || [],
+                  isPopular: data.isPopular || false,
+                  isElite: data.isElite || false,
+              });
+          });
+          setPlans(pList);
+      } catch (error) {
+          console.warn("Error fetching plans", error);
+      }
+  }, []);
+
   const fetchVideos = useCallback(async () => {
       try {
           const querySnapshot = await getDocs(collection(db, "videos"));
@@ -327,12 +352,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   useEffect(() => {
       fetchWorkspaceSettings();
+      fetchPlans();
       if (user) {
           fetchVideos();
           fetchResources();
           fetchModulesMetadata();
       }
-  }, [user, fetchVideos, fetchResources, fetchModulesMetadata]);
+  }, [user, fetchVideos, fetchResources, fetchModulesMetadata, fetchPlans]);
 
   // --- AUTH & USER SYNC ---
   useEffect(() => {
@@ -623,10 +649,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
   };
 
-  // Plans Management (Local Persisted)
-  const addPlan = async (plan: PricingPlan) => setPlans([...plans, plan]);
-  const deletePlan = async (id: string) => setPlans(plans.filter(p => p.id !== id));
-  const updatePlan = async (plan: PricingPlan) => setPlans(plans.map(p => p.id === plan.id ? plan : p));
+  // Plans Management (Firestore)
+  const addPlan = async (plan: PricingPlan) => {
+      try {
+          await setDoc(doc(db, "plans", plan.id), plan);
+          fetchPlans();
+      } catch (error) {
+          console.error("Error adding plan", error);
+      }
+  };
+  
+  const deletePlan = async (id: string) => {
+      try {
+          await deleteDoc(doc(db, "plans", id));
+          fetchPlans();
+      } catch (error) {
+          console.error("Error deleting plan", error);
+      }
+  };
+  
+  const updatePlan = async (plan: PricingPlan) => {
+      try {
+          await setDoc(doc(db, "plans", plan.id), { ...plan }, { merge: true });
+          fetchPlans();
+      } catch (error) {
+           console.error("Error updating plan", error);
+      }
+  };
 
   // CMS
   const updatePlansPageContent = async (content: PlansPageContent) => setPlansPageContent(content);
