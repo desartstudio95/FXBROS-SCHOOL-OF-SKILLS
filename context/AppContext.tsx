@@ -360,6 +360,77 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
   }, [user, fetchVideos, fetchResources, fetchModulesMetadata, fetchPlans]);
 
+  useEffect(() => {
+    if (user && workspaceSettings.googleApiKey && workspaceSettings.googleCalendarId) {
+       // Check for new meet events periodically or on load
+       const checkNewMeetEvents = async () => {
+          try {
+            const timeMin = new Date().toISOString();
+            const res = await fetch(
+              `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(workspaceSettings.googleCalendarId!)}/events?timeMin=${encodeURIComponent(timeMin)}&singleEvents=true&orderBy=startTime&key=${workspaceSettings.googleApiKey!}`
+            );
+            if (!res.ok) return;
+            const data = await res.json();
+            const meetEvents = (data.items || []).filter((event: any) => !!event.hangoutLink);
+            
+            if (meetEvents.length > 0) {
+               const knownEventsStr = localStorage.getItem(`known_meet_events_${user.id}`);
+               const knownEvents = knownEventsStr ? JSON.parse(knownEventsStr) : [];
+               let hasNew = false;
+               let newNotifications: AppNotification[] = [];
+               
+               meetEvents.forEach((event: any) => {
+                   if (!knownEvents.includes(event.id)) {
+                       hasNew = true;
+                       knownEvents.push(event.id);
+                       
+                       // Create notification
+                       toast.success(`Nova Sessão Agendada: ${event.summary || 'Sessão ao Vivo'}`, {
+                          icon: '🗓️',
+                          duration: 10000
+                       });
+                       
+                       if ('Notification' in window && Notification.permission === 'granted') {
+                           new Notification('Nova Sessão ao Vivo Agendada', {
+                               body: `A sessão "${event.summary || 'Sem Título'}" foi agendada. Acesse a aba Sessões ao Vivo para participar.`,
+                               icon: '/icon.png'
+                           });
+                       }
+                       
+                       newNotifications.push({
+                         id: `meet_${event.id}_${Date.now()}`,
+                         title: "Nova Sessão ao Vivo",
+                         message: `A sessão "${event.summary || 'Sem Título'}" foi agendada. Acesse a aba Sessões ao Vivo para participar.`,
+                         read: false,
+                         date: new Date().toISOString(),
+                         type: 'info'
+                       });
+                   }
+               });
+               
+               if (hasNew) {
+                   localStorage.setItem(`known_meet_events_${user.id}`, JSON.stringify(knownEvents));
+                   
+                   // Guardar no Firestore
+                   const updatedUserNotifications = [...(user.notifications || []), ...newNotifications];
+                   setUser({ ...user, notifications: updatedUserNotifications });
+                   updateDoc(doc(db, "users", user.id), { notifications: updatedUserNotifications })
+                      .catch(e => console.error("Erro salvando notificação do meet:", e));
+               }
+            }
+          } catch (e) {
+             console.error("Erro ao verificar novos eventos meet", e);
+          }
+       };
+
+       checkNewMeetEvents();
+       
+       // Também podemos checar a cada 10 minutos (600000 ms) se o usuário ficar com a página aberta
+       const interval = setInterval(checkNewMeetEvents, 600000);
+       return () => clearInterval(interval);
+    }
+  }, [user, workspaceSettings]);
+
   // --- AUTH & USER SYNC ---
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -716,17 +787,45 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const toggleVideoCompletion = async (id: string) => {
       if (!user) return;
       
-      const newCompleted = completedVideoIds.includes(id) 
-          ? completedVideoIds.filter(v => v !== id) 
-          : [...completedVideoIds, id];
+      const isNewlyCompleted = !completedVideoIds.includes(id);
+      const newCompleted = isNewlyCompleted 
+          ? [...completedVideoIds, id]
+          : completedVideoIds.filter(v => v !== id);
       
       setCompletedVideoIds(newCompleted);
       
+      // Points and Streak Logic
+      let newPoints = user.points || 0;
+      let newStreak = user.streakDays || 1;
+      let newLastStudy = user.lastStudyDate || new Date().toISOString();
+      const todayStr = new Date().toDateString();
+      const lastStudyStr = new Date(newLastStudy).toDateString();
+      
+      // Increment streak only if doing new study on a new day
+      if (isNewlyCompleted) {
+          newPoints += 50; // Award 50 points per video
+          if (todayStr !== lastStudyStr) {
+             newStreak += 1;
+             newLastStudy = new Date().toISOString();
+          }
+      }
+      
       // Optimistic update for user state
-      setUser(prev => prev ? { ...prev, completedVideos: newCompleted } : null);
+      setUser(prev => prev ? { 
+          ...prev, 
+          completedVideos: newCompleted,
+          points: newPoints,
+          streakDays: newStreak,
+          lastStudyDate: newLastStudy
+      } : null);
 
       try {
-          await updateDoc(doc(db, "users", user.id), { completedVideos: newCompleted });
+          await updateDoc(doc(db, "users", user.id), { 
+              completedVideos: newCompleted,
+              points: newPoints,
+              streakDays: newStreak,
+              lastStudyDate: newLastStudy
+          });
       } catch (e) {
           console.error("Error updating completed videos", e);
       }
@@ -862,7 +961,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const requestNotificationPermission = () => {
-    toast.info("Notificações Push ativadas no navegador!");
+    if (!('Notification' in window)) {
+      toast.error('Este navegador não suporta notificações de área de trabalho.');
+      return;
+    }
+    
+    Notification.requestPermission().then((permission) => {
+      if (permission === 'granted') {
+        toast.success("Notificações Push ativadas com sucesso!");
+      } else {
+        toast.error("Permissão para notificações negada.");
+      }
+    });
   };
 
   const value: AppContextType = {

@@ -95,7 +95,8 @@ const Dashboard: React.FC = () => {
     uploadImage, 
     updateModuleMetadata,
     workspaceSettings,
-    updateWorkspaceSettings
+    updateWorkspaceSettings,
+    requestNotificationPermission
   } = useApp();
   const navigate = useNavigate();
 
@@ -1357,72 +1358,177 @@ const Dashboard: React.FC = () => {
             
             {activeTab === 'home' && !selectedVideo && (
                 // HOME DASHBOARD VIEW
-                <div className="p-4 lg:p-6 max-w-6xl mx-auto animate-fadeIn pb-20">
-                    {/* Welcome Banner */}
-                    <div className="relative rounded-2xl overflow-hidden mb-6 border border-slate-800 bg-slate-900 shadow-2xl group">
-                        <div className="absolute inset-0 z-10"></div>
-                        <img 
-                            src={dashboardContent.banner.bgImage} 
-                            alt="Banner" 
-                            className="w-full h-40 md:h-56 object-cover opacity-50 absolute inset-0 transform group-hover:scale-105 transition-transform duration-700"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-transparent z-10"></div>
-                        <div className="absolute inset-0 z-20 flex flex-col justify-center px-6 md:px-10">
-                            <h1 className="text-2xl md:text-4xl font-extrabold text-white mb-2 tracking-tight drop-shadow-lg">{dashboardContent.banner.titlePrefix} {user.name.split(' ')[0]} 👋</h1>
-                            <p className="text-slate-300 max-w-xl mb-6 text-base font-light">{dashboardContent.banner.subtitle}</p>
-                            
-                            <div className="flex items-center gap-6">
+                <div className="p-4 lg:p-6 max-w-7xl mx-auto animate-fadeIn pb-20">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-[minmax(180px,auto)] mb-8">
+                        
+                        {/* Main Welcome & Progress (2x2) */}
+                        <div className="lg:col-span-2 lg:row-span-2 relative rounded-3xl overflow-hidden border border-slate-800/50 bg-slate-900/40 backdrop-blur-xl shadow-[0_0_30px_rgba(0,0,0,0.5)] group">
+                            <div className="absolute inset-0 z-10 bg-gradient-to-br from-red-900/20 to-black/80"></div>
+                            {dashboardContent.banner.bgImage && (
+                                <img 
+                                    src={dashboardContent.banner.bgImage} 
+                                    alt="Banner" 
+                                    className="w-full h-full object-cover opacity-20 absolute inset-0 transform group-hover:scale-105 transition-transform duration-700 blur-sm"
+                                />
+                            )}
+                            <div className="absolute inset-0 z-20 flex flex-col justify-between p-8">
                                 <div>
-                                    <div className="text-xs text-slate-500 uppercase font-bold tracking-widest mb-1">Progresso Total</div>
-                                    <div className="flex items-end gap-2">
-                                        <span className="text-4xl font-bold text-white leading-none">{Math.round((completedVideoIds.length / (videos.length || 1)) * 100)}%</span>
-                                        <div className="h-1.5 w-24 bg-slate-800 rounded-full mb-2 ml-2 overflow-hidden">
-                                            <div className="h-full bg-red-600 rounded-full" style={{ width: `${Math.round((completedVideoIds.length / (videos.length || 1)) * 100)}%` }}></div>
+                                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-[10px] font-bold tracking-wider mb-4 border border-red-500/20">
+                                        <Sparkles size={12} /> LEVEL {Math.floor(completedVideoIds.length / 5) + 1}
+                                    </div>
+                                    <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-2 tracking-tight drop-shadow-xl">
+                                        {dashboardContent.banner.titlePrefix} {user.name.split(' ')[0]}
+                                    </h1>
+                                    <p className="text-slate-300 max-w-sm mb-6 text-sm md:text-base font-light leading-relaxed">
+                                        {dashboardContent.banner.subtitle}
+                                    </p>
+                                </div>
+                                
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                                        <div className="flex-1 bg-black/40 backdrop-blur-md rounded-2xl p-4 border border-slate-700/50 flex items-center justify-between">
+                                            <div>
+                                                <div className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-1">Seu Progresso</div>
+                                                <div className="flex items-end gap-1">
+                                                    <span className="text-2xl font-black text-white leading-none">{Math.round((completedVideoIds.length / (videos.length || 1)) * 100)}%</span>
+                                                </div>
+                                            </div>
+                                            <div className="w-12 h-12 rounded-full border-4 border-slate-800 flex items-center justify-center relative">
+                                                {/* Circular Progress approximation */}
+                                                <svg className="absolute inset-0 w-full h-full -rotate-90">
+                                                    <circle cx="20" cy="20" r="18" fill="none" stroke="rgba(220,38,38,0.2)" strokeWidth="4" />
+                                                    <circle cx="20" cy="20" r="18" fill="none" stroke="#dc2626" strokeWidth="4" strokeDasharray="113" strokeDashoffset={113 - (113 * Math.round((completedVideoIds.length / (videos.length || 1)) * 100)) / 100} />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex-1 bg-black/40 backdrop-blur-md rounded-2xl p-4 border border-slate-700/50 relative overflow-hidden group/streak">
+                                            <div className="absolute top-0 right-0 p-3 opacity-20 group-hover/streak:opacity-100 transition-opacity">
+                                                <Activity size={40} className="text-red-500" />
+                                            </div>
+                                            <div className="relative z-10">
+                                                <div className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-1">Ofensiva Atual</div>
+                                                <div className="flex items-end gap-2">
+                                                    <span className="text-2xl font-black text-white leading-none">{user.streakDays || 1}</span>
+                                                    <span className="text-xs text-slate-500 font-bold mb-0.5">Dias</span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Continue Watching */}
-                    <div className="mb-8">
-                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-bold text-white flex items-center gap-2"><PlayCircle className="text-red-500" size={20} /> {dashboardContent.sections.continueWatchingTitle}</h2>
-                         </div>
-                         
-                         {(() => {
-                             const firstUnwatched = videos.find(v => !completedVideoIds.includes(v.id));
-                             if (firstUnwatched) {
-                                 return (
-                                     <div onClick={() => handleVideoSelect(firstUnwatched)} className="bg-slate-900/40 border border-slate-800 p-4 rounded-xl flex flex-col md:flex-row gap-4 cursor-pointer hover:bg-slate-900 hover:border-slate-700 transition-all group shadow-lg">
-                                         <div className="relative w-full md:w-64 aspect-video bg-black rounded-lg overflow-hidden flex-shrink-0 ring-1 ring-slate-800 group-hover:ring-red-500/30 transition-all">
-                                             <img src={firstUnwatched.thumbnail} alt={firstUnwatched.title} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
-                                             <div className="absolute inset-0 flex items-center justify-center">
-                                                 <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
-                                                     <Play size={20} fill="currentColor" />
-                                                 </div>
-                                             </div>
-                                         </div>
-                                         <div className="flex flex-col justify-center py-1">
-                                             <div className="inline-block px-2 py-0.5 rounded bg-slate-950 text-[10px] text-red-400 font-bold uppercase tracking-wider mb-2 self-start border border-slate-800">{firstUnwatched.module}</div>
-                                             <h3 className="text-xl font-bold text-white mb-2 group-hover:text-red-500 transition-colors">{firstUnwatched.title}</h3>
-                                             <p className="text-slate-400 text-xs line-clamp-2 mb-4 leading-relaxed">{firstUnwatched.description}</p>
-                                             <div className="flex items-center gap-4 text-[10px] text-slate-500 font-mono">
-                                                 <span className="flex items-center gap-1"><Clock size={10}/> {firstUnwatched.duration}</span>
-                                             </div>
-                                         </div>
-                                     </div>
-                                 )
-                             }
-                             return (
-                                <div className="bg-slate-900/30 border border-slate-800 rounded-xl p-6 text-center">
-                                    <Trophy size={32} className="mx-auto text-yellow-500 mb-3" />
-                                    <h3 className="text-lg font-bold text-white mb-1">Parabéns!</h3>
-                                    <p className="text-slate-400 text-sm">Você completou todas as aulas disponíveis.</p>
+                        {/* Continue Watching (1x1) */}
+                        {(() => {
+                            const firstUnwatched = videos.find(v => !completedVideoIds.includes(v.id));
+                            return (
+                                <div 
+                                    onClick={() => firstUnwatched ? handleVideoSelect(firstUnwatched) : null}
+                                    className={`rounded-3xl p-6 border border-slate-800/50 bg-slate-900/40 backdrop-blur-xl relative overflow-hidden group ${firstUnwatched ? 'cursor-pointer hover:border-slate-700/50 hover:bg-slate-800/50' : ''} transition-all flex flex-col justify-between`}
+                                >
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-3xl -mr-16 -mt-16 transition-all group-hover:bg-red-500/20"></div>
+                                    <div className="flex justify-between items-start mb-4 relative z-10">
+                                        <div className="w-10 h-10 rounded-2xl bg-black/50 border border-slate-700/50 flex items-center justify-center backdrop-blur-md">
+                                            <Play size={18} className="text-white ml-1" />
+                                        </div>
+                                        <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500 line-clamp-1">{dashboardContent.sections.continueWatchingTitle}</span>
+                                    </div>
+                                    <div className="relative z-10 mt-auto">
+                                        {firstUnwatched ? (
+                                            <>
+                                                <div className="text-xs font-bold text-red-500 mb-1 line-clamp-1">{firstUnwatched.module}</div>
+                                                <h3 className="text-white font-bold leading-tight line-clamp-2">{firstUnwatched.title}</h3>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Trophy size={20} className="text-yellow-500 mb-2" />
+                                                <h3 className="text-white font-bold leading-tight">Tudo Concluído!</h3>
+                                                <p className="text-xs text-slate-500 mt-1">Parabéns pelo esforço.</p>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
-                             );
-                         })()}
+                            );
+                        })()}
+
+                        {/* Next Live Session or Action (1x1) */}
+                        <div 
+                            onClick={() => setActiveTab('meet')}
+                            className="col-span-1 rounded-3xl p-6 border border-slate-800/50 bg-slate-900/40 backdrop-blur-xl relative overflow-hidden group hover:border-slate-700/50 hover:bg-slate-800/50 cursor-pointer transition-all flex flex-col justify-between"
+                        >
+                            <div className="absolute top-0 left-0 w-32 h-32 bg-green-500/10 rounded-full blur-3xl -ml-16 -mt-16 transition-all group-hover:bg-green-500/20"></div>
+                            <div className="flex justify-between items-start relative z-10">
+                                <div className="w-10 h-10 rounded-2xl bg-black/50 border border-slate-700/50 flex items-center justify-center backdrop-blur-md">
+                                    <Video size={18} className="text-green-500" />
+                                </div>
+                                <span className="flex h-2 w-2 relative mt-4 mr-1">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                </span>
+                            </div>
+                            <div className="relative z-10 mt-6">
+                                <h3 className="text-white font-bold leading-tight mb-1">Aulas ao Vivo</h3>
+                                <p className="text-xs text-slate-400 line-clamp-2">Acesse suas sessões do Google Meet com a FXBROS.</p>
+                            </div>
+                        </div>
+
+                        {/* Mentorship/Community (1x1) */}
+                        <div 
+                            onClick={() => setActiveTab('chat')}
+                            className="rounded-3xl p-6 border border-slate-800/50 bg-slate-900/40 backdrop-blur-xl relative overflow-hidden group hover:border-slate-700/50 hover:bg-slate-800/50 cursor-pointer transition-all flex flex-col justify-between"
+                        >
+                            <div className="absolute bottom-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl -mr-16 -mb-16 transition-all group-hover:bg-blue-500/20"></div>
+                            <div className="flex justify-between items-start relative z-10">
+                                <div className="w-10 h-10 rounded-2xl bg-black/50 border border-slate-700/50 flex items-center justify-center backdrop-blur-md">
+                                    <MessageSquarePlus size={18} className="text-blue-500" />
+                                </div>
+                            </div>
+                            <div className="relative z-10 mt-6">
+                                <h3 className="text-white font-bold leading-tight mb-1">Comunidade VIP</h3>
+                                <p className="text-xs text-slate-400 line-clamp-2">Conecte-se com a academia.</p>
+                            </div>
+                        </div>
+
+                        {/* AI Assistant Quick Start (1x1) */}
+                        <div 
+                            onClick={() => setActiveTab('ai')}
+                            className="rounded-3xl p-6 border border-slate-800/50 bg-slate-900/40 backdrop-blur-xl relative overflow-hidden group hover:border-slate-700/50 hover:bg-slate-800/50 cursor-pointer transition-all flex flex-col justify-between"
+                        >
+                            <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -ml-16 -mb-16 transition-all group-hover:bg-purple-500/20"></div>
+                            <div className="flex justify-between items-start relative z-10">
+                                <div className="w-10 h-10 rounded-2xl bg-black/50 border border-slate-700/50 flex items-center justify-center backdrop-blur-md">
+                                    <Bot size={18} className="text-purple-400" />
+                                </div>
+                            </div>
+                            <div className="relative z-10 mt-6">
+                                <h3 className="text-white font-bold leading-tight mb-1">Assistente IA</h3>
+                                <p className="text-xs text-slate-400 line-clamp-2">Análises e suporte 24h.</p>
+                            </div>
+                        </div>
+
+                        {/* My Modules Quick Access (4x1) */}
+                        <div className="lg:col-span-4 rounded-3xl p-6 border border-slate-800/50 bg-slate-900/40 backdrop-blur-xl group relative overflow-hidden flex flex-col">
+                            <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 to-transparent"></div>
+                            <div className="flex items-center justify-between mb-4 relative z-10">
+                                <h2 className="text-white font-bold flex items-center gap-2"><Layers size={18} className="text-red-500"/> Seus Módulos</h2>
+                                <button onClick={() => setActiveTab('modules')} className="text-xs font-bold text-slate-400 hover:text-white uppercase tracking-wider transition-colors">Ver Todos</button>
+                            </div>
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 relative z-10 flex-1">
+                                {filteredModules.slice(0, 4).map(mod => {
+                                    return (
+                                        <div key={mod.name} className="bg-black/40 border border-slate-800/50 rounded-2xl p-4 flex flex-col justify-between hover:bg-slate-800/60 transition-colors cursor-pointer" onClick={() => setActiveTab('modules')}>
+                                            <div className="text-slate-500 mb-3"><BookOpen size={18} /></div>
+                                            <div>
+                                                <div className="text-sm font-bold text-white truncate w-full mb-1">{mod.name}</div>
+                                                <div className="text-xs text-slate-500">{mod.videos.length} aulas disponíveis</div>
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+
                     </div>
 
                     {/* All Modules - Netflix Style */}
@@ -1734,7 +1840,17 @@ const Dashboard: React.FC = () => {
               <h3 className="font-bold text-white flex items-center gap-2">
                 <Bell size={16} className="text-red-500" /> Notificações
               </h3>
-              <button onClick={() => setIsNotificationsOpen(false)} className="text-slate-500 hover:text-white"><X size={20}/></button>
+              <div className="flex items-center gap-3">
+                {('Notification' in window && Notification.permission !== 'granted') && (
+                   <button 
+                     onClick={requestNotificationPermission}
+                     className="text-[10px] text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-2 py-1 rounded transition-colors uppercase font-bold tracking-wider border border-red-500/20"
+                   >
+                     Ativar Alertas no Ecrã
+                   </button>
+                )}
+                <button onClick={() => setIsNotificationsOpen(false)} className="text-slate-500 hover:text-white"><X size={20}/></button>
+              </div>
             </div>
             
             <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar max-h-[400px]">

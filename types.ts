@@ -27,6 +27,10 @@ export interface User {
   notifications?: AppNotification[];
   completedVideos?: string[];
   favoriteVideos?: string[];
+  // Gamification
+  streakDays?: number;
+  lastStudyDate?: string;
+  points?: number;
 }
 
 export interface VideoLesson {
