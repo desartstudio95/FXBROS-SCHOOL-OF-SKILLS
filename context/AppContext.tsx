@@ -966,13 +966,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return;
     }
     
-    Notification.requestPermission().then((permission) => {
-      if (permission === 'granted') {
-        toast.success("Notificações Push ativadas com sucesso!");
-      } else {
-        toast.error("Permissão para notificações negada.");
-      }
-    });
+    try {
+      Notification.requestPermission().then((permission) => {
+        if (permission === 'granted') {
+          toast.success("Notificações Push ativadas com sucesso!");
+        } else {
+          toast.error("Permissão negada. Tente abrir o app em uma nova guia/janela.");
+        }
+      }).catch((err) => {
+        toast.error("Permissão negada. Abra o app em uma nova guia para permitir.");
+      });
+    } catch (e) {
+      toast.error("Permissão negada. Abra o app em uma nova guia para permitir.");
+    }
   };
 
   const value: AppContextType = {

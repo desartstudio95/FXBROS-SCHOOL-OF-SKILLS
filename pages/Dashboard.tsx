@@ -626,9 +626,9 @@ const Dashboard: React.FC = () => {
                                     
                                     {!isLocked && expandedModules.includes(module.name) && (
                                         <div className="pl-4 space-y-1 border-l border-slate-800 ml-3 animate-fadeIn">
-                                            {module.videos.map(video => (
+                                            {module.videos.map((video, idx) => (
                                                 <div 
-                                                    key={video.id}
+                                                    key={video.id || `sidebar-vid-${module.name}-${idx}`}
                                                     className={`flex items-center justify-between pr-2 text-xs rounded-md group/item transition-colors ${selectedVideo?.id === video.id ? 'bg-red-900/10 border-l-2 border-red-500' : 'hover:bg-slate-900/50 border-l-2 border-transparent'}`}
                                                 >
                                                     <button 
@@ -688,6 +688,21 @@ const Dashboard: React.FC = () => {
         {/* Main Content */}
         <main className={`flex-1 lg:pl-0 pt-16 lg:pt-0 relative overflow-hidden ${activeTab === 'chart' ? 'h-screen' : 'min-h-screen'}`}>
             
+            {/* Desktop Top Nav (Notifications) */}
+            <div className="hidden lg:flex absolute top-6 right-6 z-50 items-center justify-end">
+                <button 
+                  onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                  className="relative p-3 text-slate-400 hover:text-white transition-colors bg-slate-900/50 hover:bg-slate-800 rounded-full border border-slate-800 backdrop-blur-sm"
+                >
+                  <Bell size={20} />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white text-xs font-bold rounded-full flex items-center justify-center ring-4 ring-black shadow-lg">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+            </div>
+
             {/* DOCUMENT VIEWER MODAL */}
             {viewingResource && (
                 <PdfViewer resource={viewingResource} onClose={() => setViewingResource(null)} />
@@ -789,9 +804,9 @@ const Dashboard: React.FC = () => {
                                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Materiais Complementares</h3>
                                 <div className="space-y-2">
                                     {resources.filter(r => r.module === selectedVideo.module).length > 0 ? (
-                                        resources.filter(r => r.module === selectedVideo.module).map(res => (
+                                        resources.filter(r => r.module === selectedVideo.module).map((res, idx) => (
                                             <button 
-                                                key={res.id} 
+                                                key={res.id || `view-res-${idx}`} 
                                                 onClick={() => handleResourceView(res)}
                                                 className="w-full flex items-center gap-3 p-3 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 transition-colors group text-left"
                                             >
@@ -1245,8 +1260,8 @@ const Dashboard: React.FC = () => {
                     
                     {activeTab === 'favorites' && (
                         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {videos.filter(v => favoriteVideoIds.includes(v.id)).map(video => (
-                                <div key={video.id} onClick={() => handleVideoSelect(video)} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden cursor-pointer group hover:border-red-500/50 transition-all">
+                            {videos.filter(v => favoriteVideoIds.includes(v.id)).map((video, idx) => (
+                                <div key={video.id || `fav-vid-${idx}`} onClick={() => handleVideoSelect(video)} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden cursor-pointer group hover:border-red-500/50 transition-all">
                                     <div className="aspect-video relative">
                                         <img src={video.thumbnail} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
                                         <div className="absolute inset-0 flex items-center justify-center">
@@ -1269,8 +1284,8 @@ const Dashboard: React.FC = () => {
 
                     {activeTab === 'resources' && (
                         <div className="grid md:grid-cols-2 gap-4">
-                            {resources.map(res => (
-                                <div key={res.id} onClick={() => handleResourceView(res)} className="bg-slate-900 p-4 rounded-xl border border-slate-800 flex items-center gap-4 hover:bg-slate-800 cursor-pointer transition-colors group">
+                            {resources.map((res, idx) => (
+                                <div key={res.id || `all-res-${idx}`} onClick={() => handleResourceView(res)} className="bg-slate-900 p-4 rounded-xl border border-slate-800 flex items-center gap-4 hover:bg-slate-800 cursor-pointer transition-colors group">
                                     <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center text-blue-500 group-hover:text-white transition-colors">
                                         <FileText size={20} />
                                     </div>
@@ -1339,8 +1354,8 @@ const Dashboard: React.FC = () => {
                                             
                                             {!isLocked && expandedModules.includes(mod.name) && (
                                                 <div className="mt-4 space-y-1">
-                                                    {mod.videos.map(v => (
-                                                        <div key={v.id} onClick={() => handleVideoSelect(v)} className="flex items-center justify-between p-2 hover:bg-slate-800 rounded cursor-pointer group">
+                                                    {mod.videos.map((v, idx) => (
+                                                        <div key={v.id || `mod-vid-${mod.name}-${idx}`} onClick={() => handleVideoSelect(v)} className="flex items-center justify-between p-2 hover:bg-slate-800 rounded cursor-pointer group">
                                                             <span className={`text-xs ${completedVideoIds.includes(v.id) ? 'text-slate-500 line-through' : 'text-slate-300 group-hover:text-white'}`}>{v.title}</span>
                                                             {completedVideoIds.includes(v.id) && <CheckCircle2 size={12} className="text-green-500" />}
                                                         </div>
@@ -1701,9 +1716,9 @@ const Dashboard: React.FC = () => {
                                                 </div>
 
                                                 {/* Video Cards in this Module */}
-                                                {module.videos.map((video) => (
+                                                {module.videos.map((video, idx) => (
                                                     <div 
-                                                        key={video.id}
+                                                        key={video.id || `row-vid-${module.name}-${idx}`}
                                                         onClick={() => !isLocked && handleVideoSelect(video)}
                                                         className="min-w-[220px] md:min-w-[260px] h-[145px] mt-auto mb-auto relative rounded-lg overflow-hidden cursor-pointer flex-shrink-0 snap-start bg-slate-900 ring-1 ring-slate-800 hover:ring-slate-600 transition-all transform hover:scale-105 hover:z-10 shadow-lg group/video"
                                                     >
@@ -1835,8 +1850,8 @@ const Dashboard: React.FC = () => {
 
         {/* Notifications Panel */}
         {isNotificationsOpen && (
-          <div className="fixed inset-0 z-[110] lg:absolute lg:inset-auto lg:top-16 lg:right-6 lg:w-80 lg:h-auto lg:max-h-[500px] flex flex-col bg-slate-950 border border-slate-800 lg:rounded-2xl shadow-2xl overflow-hidden animate-fadeIn">
-            <div className="p-4 border-b border-slate-900 flex items-center justify-between bg-slate-900/50">
+          <div className="fixed inset-0 z-[110] lg:inset-auto lg:top-20 lg:right-6 lg:w-96 lg:h-auto lg:max-h-[500px] flex flex-col bg-slate-950 border border-slate-800 lg:rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden animate-fadeIn">
+            <div className="p-4 border-b border-slate-900 flex items-center justify-between bg-slate-900/80 backdrop-blur-sm">
               <h3 className="font-bold text-white flex items-center gap-2">
                 <Bell size={16} className="text-red-500" /> Notificações
               </h3>
@@ -1860,11 +1875,13 @@ const Dashboard: React.FC = () => {
                   <p className="text-slate-600 text-xs">Nenhuma notificação</p>
                 </div>
               ) : (
-                user.notifications.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(notif => (
+                [...user.notifications]
+                  .sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                  .map((notif, idx) => (
                   <div 
-                    key={notif.id} 
+                    key={notif.id || `notif-${idx}`} 
                     className={`p-3 rounded-xl border transition-all ${notif.read ? 'bg-slate-900/20 border-slate-900 opacity-60' : 'bg-slate-900 border-slate-800 hover:border-slate-700'}`}
-                    onClick={() => !notif.read && handleMarkAsRead(notif.id)}
+                    onClick={() => !notif.read && notif.id && handleMarkAsRead(notif.id)}
                   >
                     <div className="flex items-start justify-between gap-2 mb-1">
                       <h4 className={`text-xs font-bold ${notif.read ? 'text-slate-400' : 'text-white'}`}>{notif.title}</h4>
